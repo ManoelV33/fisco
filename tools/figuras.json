@@ -698,5 +698,139 @@
    "legenda": "Contribuição confederativa × contribuição sindical",
    "mapa": false
   }
+ ],
+ "imp-direito-trib-06-obrigacao-tributaria-fato-g": [
+  {
+   "sec": 4,
+   "img": "f344cb0f421c",
+   "legenda": "Linha do tempo: hipótese de incidência → fato gerador → lançamento (crédito tributário)",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "994d5abdbbb5",
+   "legenda": "Sujeito passivo: contribuinte × responsável; obrigação principal × acessória",
+   "mapa": false
+  },
+  {
+   "sec": 14,
+   "img": "8c40e5c0515f",
+   "legenda": "Domicílio tributário: regra da eleição, recusa pela autoridade e critérios supletivos",
+   "mapa": false
+  }
+ ],
+ "imp-portugues-04-verbos": [
+  {
+   "sec": 0,
+   "img": "4667d73c1909",
+   "legenda": "Flexão verbal: modo, tempo, número e pessoa",
+   "mapa": false
+  },
+  {
+   "sec": 0,
+   "img": "19b8a9ce71d8",
+   "legenda": "Modos verbais: indicativo, subjuntivo e imperativo",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "4238b8b7f0df",
+   "legenda": "Pretéritos do indicativo: simples e compostos",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "c5aa192314bd",
+   "legenda": "Futuros do indicativo: simples e compostos",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "e5a697a39999",
+   "legenda": "Pretéritos do subjuntivo",
+   "mapa": false
+  },
+  {
+   "sec": 9,
+   "img": "c0df6612984a",
+   "legenda": "Futuro do subjuntivo: simples e composto",
+   "mapa": false
+  },
+  {
+   "sec": 10,
+   "img": "31f31af62c0a",
+   "legenda": "Imperativo afirmativo × negativo",
+   "mapa": false
+  },
+  {
+   "sec": 15,
+   "img": "b0f8e8795ba0",
+   "legenda": "Particípio e verbos auxiliares (ter/haver)",
+   "mapa": false
+  }
+ ],
+ "imp-raciocinio-l-01-proposicoes-conectivos-e-ta": [
+  {
+   "sec": 3,
+   "img": "d9a2c784112f",
+   "legenda": "Sentenças × expressões: quais são proposições",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "579206fb7fe8",
+   "legenda": "Dupla negação: ~(~p) equivale a p",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "cec96accab6b",
+   "legenda": "Quadro dos conectivos: nome, conectivo comum, notação e formas alternativas",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "6b62e9d7b929",
+   "legenda": "Tabela-verdade da conjunção (∧)",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "ac3d672da713",
+   "legenda": "Tabela-verdade da disjunção inclusiva (∨)",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "90818bc9a5e9",
+   "legenda": "Tabela-verdade da disjunção exclusiva (⊻)",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "2aceb8618b28",
+   "legenda": "Tabela-verdade do condicional (→)",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "4bdd3422c4f9",
+   "legenda": "Condicional: antecedente (condição suficiente) × consequente (condição necessária)",
+   "mapa": false
+  },
+  {
+   "sec": 9,
+   "img": "424f11c04a40",
+   "legenda": "Tabela-verdade do bicondicional (↔)",
+   "mapa": false
+  }
+ ],
+ "imp-contabilidad-11-dva": [
+  {
+   "sec": 1,
+   "img": "7b29245d2250",
+   "legenda": "A quem o valor adicionado é distribuído: empregados, governo, financiadores e acionistas",
+   "mapa": false
+  }
  ]
 }
