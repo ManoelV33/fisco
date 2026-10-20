@@ -20,6 +20,8 @@ def main():
     ap.add_argument("--codigo", required=True)
     ap.add_argument("--pacotes", required=True)
     ap.add_argument("--extra")
+    ap.add_argument("--figuras", help="JSON {temaId: [{sec, img, legenda, mapa}]} com a posição das figuras nos resumos")
+    ap.add_argument("--figdir", help="pasta com <temaId>/<img>.webp")
     a = ap.parse_args()
     if len(a.codigo) < 4:
         raise SystemExit("A senha precisa ter pelo menos 4 caracteres.")
@@ -48,19 +50,66 @@ def main():
         if isinstance(o, dict): return {k: limpar(v) for k, v in o.items()}
         return o
     temas, questoes = limpar(temas), limpar(questoes)
+    usadas = {}
+    if a.figuras:
+        figs = json.load(open(a.figuras))
+        for t in temas:
+            fl = figs.get(t["id"])
+            if not fl or "resumo" not in t: continue
+            r = json.loads(json.dumps(t["resumo"]))
+            extra_sec = []
+            # insere de trás para frente para os índices de posição continuarem válidos
+            for f in fl:
+                caminho = os.path.join(a.figdir, t["id"], f["img"] + ".webp")
+                if not os.path.exists(caminho): raise SystemExit("figura não encontrada: " + caminho)
+                usadas[f["img"]] = caminho
+                b = {"tipo": "figura", "img": f["img"], "legenda": f.get("legenda", ""), "mapa": bool(f.get("mapa"))}
+                if f["sec"] == "mapas": extra_sec.append(b); continue
+                s = r["secoes"][f["sec"]]
+                s.setdefault("_fig", []).append(b)
+            for s in r["secoes"]:
+                fb = s.pop("_fig", None)
+                if fb: s["blocos"] = s["blocos"][:1] + fb + s["blocos"][1:]
+            if extra_sec:
+                r["secoes"].append({"titulo": "Mapas mentais e esquemas do PDF", "blocos": extra_sec})
+            t["resumo"] = r
     conteudo = {"geradoEm": int(time.time() * 1000), "temas": temas, "questoes": questoes, "cards": cards}
     bruto = gzip.compress(json.dumps(conteudo, ensure_ascii=False, separators=(",", ":")).encode(), 9)
-    salt, iv = secrets.token_bytes(16), secrets.token_bytes(12)
+    destino = os.path.join(RAIZ, "data", "conteudo.enc")
+    salt = None
+    if os.path.exists(destino):  # reaproveita o salt se a senha for a mesma (evita recifrar as figuras)
+        old = open(destino, "rb").read()
+        s0 = old[4:20]
+        k0 = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=s0, iterations=struct.unpack(">I", old[:4])[0]).derive(a.codigo.encode())
+        try:
+            AESGCM(k0).decrypt(old[20:32], old[32:], None); salt = s0
+        except Exception:
+            pass
+    salt = salt or secrets.token_bytes(16)
+    iv = secrets.token_bytes(12)
     chave = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=ITER).derive(a.codigo.encode())
     cifrado = AESGCM(chave).encrypt(iv, bruto, None)
     os.makedirs(os.path.join(RAIZ, "data"), exist_ok=True)
     with open(os.path.join(RAIZ, "data", "conteudo.enc"), "wb") as f:
         f.write(struct.pack(">I", ITER) + salt + iv + cifrado)
+    import hashlib
+    imgdir = os.path.join(RAIZ, "data", "img"); os.makedirs(imgdir, exist_ok=True)
+    for nome in os.listdir(imgdir):
+        if nome[:-4] not in usadas: os.remove(os.path.join(imgdir, nome))
+    for fid, caminho in usadas.items():
+        dados = open(caminho, "rb").read()
+        fiv = hashlib.sha256(chave + fid.encode() + hashlib.sha256(dados).digest()).digest()[:12]
+        out = fiv + AESGCM(chave).encrypt(fiv, dados, None)
+        alvo = os.path.join(imgdir, fid + ".bin")
+        if not (os.path.exists(alvo) and open(alvo, "rb").read() == out):
+            open(alvo, "wb").write(out)
     versao = time.strftime("%Y%m%d%H%M%S")
     sw = open(os.path.join(RAIZ, "sw.js")).read()
     sw = re.sub(r'const VERSAO = "[^"]*";', f'const VERSAO = "{versao}";', sw)
+    lista = json.dumps(sorted(f"data/img/{x}.bin" for x in usadas))
+    sw = re.sub(r'const FIGURAS = \[[^\]]*\];', f'const FIGURAS = {lista};', sw)
     open(os.path.join(RAIZ, "sw.js"), "w").write(sw)
-    print(f"{len(temas)} temas, {len(questoes)} questões, {len(cards)} cards -> data/conteudo.enc ({len(cifrado)//1024} KB), versão {versao}")
+    print(f"{len(temas)} temas, {len(questoes)} questões, {len(cards)} cards -> data/conteudo.enc ({len(cifrado)//1024} KB), {len(usadas)} figuras, versão {versao}")
 
 if __name__ == "__main__":
     main()

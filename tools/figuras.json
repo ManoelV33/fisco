@@ -1,0 +1,702 @@
+{
+ "imp-tecnologia-d-02-conceitos-basicos-de-bancos": [
+  {
+   "sec": 2,
+   "img": "36d3ccd77b43",
+   "legenda": "Camadas: aplicações → SGBD → banco de dados",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "9e9696db7c76",
+   "legenda": "Sistema de Banco de Dados: usuários, aplicações, SGBD, metadados e dados",
+   "mapa": false
+  },
+  {
+   "sec": 1,
+   "img": "ad68a45b6187",
+   "legenda": "Banco de dados: o que é e como funciona (dado × informação, CRUD)",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "655f012a73fe",
+   "legenda": "Do caos à ordem: abordagem de arquivos × abordagem de banco de dados",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "e7049e039d17",
+   "legenda": "Características da abordagem de banco de dados",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "32af7b145046",
+   "legenda": "Os 4 pilares ACID",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "0c700813194a",
+   "legenda": "Transações: operações e propriedades ACID",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "d7f04df0f466",
+   "legenda": "AD × DBA: diferenças essenciais",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "9307a518e127",
+   "legenda": "Arquitetura ANSI/SPARC: níveis externo, conceitual e interno",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "ac200212beb9",
+   "legenda": "Arquitetura ANSI/SPARC e independência de dados",
+   "mapa": false
+  },
+  {
+   "sec": 9,
+   "img": "9cf3c403bf1b",
+   "legenda": "Exemplo de modelo conceitual (DER)",
+   "mapa": false
+  },
+  {
+   "sec": 9,
+   "img": "57c279dd3c29",
+   "legenda": "Do conceito ao código: modelos conceitual, lógico e físico",
+   "mapa": false
+  },
+  {
+   "sec": 10,
+   "img": "e598afa0b16d",
+   "legenda": "Classificação dos SGBDs",
+   "mapa": false
+  },
+  {
+   "sec": "mapas",
+   "img": "e4701b6bbee0",
+   "legenda": "Conceitos básicos de bancos de dados (resumo esquemático)",
+   "mapa": false
+  },
+  {
+   "sec": "mapas",
+   "img": "9bfe1cbc57be",
+   "legenda": "Mapa mental: Banco de Dados (conceitos, SGBD, abordagens)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "94c3618069bb",
+   "legenda": "Mapa mental: propriedades das transações (ACID)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "27ada913f363",
+   "legenda": "Mapa mental: arquitetura ANSI/SPARC (três esquemas)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "43192cb80b4b",
+   "legenda": "Mapa mental: projeto de banco de dados",
+   "mapa": true
+  }
+ ],
+ "imp-tecnologia-d-03-modelagem-conceitual": [
+  {
+   "sec": 1,
+   "img": "5910a29414b3",
+   "legenda": "Etapas do projeto de banco de dados (do minimundo ao esquema físico)",
+   "mapa": false
+  },
+  {
+   "sec": 1,
+   "img": "6b641668ea73",
+   "legenda": "Fluxo de desenvolvimento do sistema de banco de dados",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "eff8c9684747",
+   "legenda": "Exemplo clássico de DER (notação de Chen)",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "fdc73a06c44f",
+   "legenda": "Entidade × instância",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "9df2c1e89515",
+   "legenda": "Autorrelacionamento (relacionamento recursivo) com papéis",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "6f295450ac9e",
+   "legenda": "Grau do relacionamento: binário e ternário",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "48103d14aea7",
+   "legenda": "Classificação de relacionamentos: grau e cardinalidade",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "5ca43753af37",
+   "legenda": "Restrições de participação: total × parcial",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "dec4121b2011",
+   "legenda": "N:N com atributos → entidade associativa",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "acfa05494e3d",
+   "legenda": "Atributos: tipos e classificações",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "d097d590849f",
+   "legenda": "Legenda da notação de Chen",
+   "mapa": false
+  },
+  {
+   "sec": 9,
+   "img": "cd05196b1d89",
+   "legenda": "MER Estendido: especialização, generalização e restrições",
+   "mapa": false
+  },
+  {
+   "sec": 10,
+   "img": "5c872cd83441",
+   "legenda": "Agregação: relacionamento tratado como entidade",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "f409fc34eeaa",
+   "legenda": "Notação Pé-de-Galinha: leitura dos símbolos de cardinalidade",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "41cb0562a1b9",
+   "legenda": "Exemplo de diagrama em notação Pé-de-Galinha",
+   "mapa": false
+  },
+  {
+   "sec": 12,
+   "img": "b1c9a78084d9",
+   "legenda": "Exemplo integrado de DER",
+   "mapa": false
+  },
+  {
+   "sec": "mapas",
+   "img": "21cbc1158ec4",
+   "legenda": "Mapa mental: modelagem conceitual (I)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "ee298f00abac",
+   "legenda": "Mapa mental: modelagem conceitual (II)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "3937f6448f0f",
+   "legenda": "Mapa mental: modelagem conceitual (III)",
+   "mapa": true
+  }
+ ],
+ "imp-tecnologia-d-04-modelagem-relacional": [
+  {
+   "sec": 2,
+   "img": "603fc5dea52f",
+   "legenda": "O que é o modelo relacional e por que mudou tudo",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "b66933bd697f",
+   "legenda": "Terminologia na prática: tabela/relação, coluna/atributo, linha/tupla, domínio",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "11226d235098",
+   "legenda": "Equivalência de termos: tabela, linha, coluna, tipo, grau",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "5dabfc698222",
+   "legenda": "Estrutura fundamental e as 3 regras essenciais (sem ordem, linhas únicas, valores atômicos)",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "75b64fbe0bca",
+   "legenda": "Tipos de chaves: integridade e unicidade",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "b437667c05e5",
+   "legenda": "Restrições de integridade: domínio, entidade, referencial e de usuário",
+   "mapa": false
+  },
+  {
+   "sec": 12,
+   "img": "fabe295cc63f",
+   "legenda": "Tipos de relacionamentos e chaves (1:1, 1:N, N:M)",
+   "mapa": false
+  },
+  {
+   "sec": 13,
+   "img": "591d1de67d8c",
+   "legenda": "Visões (views) e visão materializada",
+   "mapa": false
+  },
+  {
+   "sec": 14,
+   "img": "182598e04b4d",
+   "legenda": "Índices: primário × secundário",
+   "mapa": false
+  },
+  {
+   "sec": 15,
+   "img": "bd257e3ab4bf",
+   "legenda": "As 12 Regras de Codd",
+   "mapa": false
+  },
+  {
+   "sec": "mapas",
+   "img": "84faf8e1e062",
+   "legenda": "Mapa mental: modelagem lógica (I)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "39b7ffec9e80",
+   "legenda": "Mapa mental: modelagem lógica, chaves (II)",
+   "mapa": true
+  },
+  {
+   "sec": "mapas",
+   "img": "e6b6965bbeec",
+   "legenda": "Mapa mental: relacionamentos (III)",
+   "mapa": true
+  }
+ ],
+ "imp-tecnologia-d-05-normalizacao": [
+  {
+   "sec": 1,
+   "img": "58bd7f465f99",
+   "legenda": "Hierarquia das formas normais",
+   "mapa": false
+  },
+  {
+   "sec": 1,
+   "img": "7bfd7cdf75ab",
+   "legenda": "Normalização: problema, anomalias e solução",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "a256b83ddfba",
+   "legenda": "Valor atômico (1FN)",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "330712517745",
+   "legenda": "Atributos multivalorados violam a 1FN",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "193ae37db02b",
+   "legenda": "Atributos compostos: dividir em colunas",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "d0b57d552d7c",
+   "legenda": "Método rápido para a 1FN",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "08ceddec7826",
+   "legenda": "Superchave",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "bacb0aaa49ee",
+   "legenda": "Chave candidata × chave primária",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "dca8bb16fedc",
+   "legenda": "Dependência funcional: X determina Y",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "30c577c1d7b5",
+   "legenda": "Dependência total × parcial",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "aa65fc1edfd9",
+   "legenda": "Roteiro para a 2FN",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "fa427cebf277",
+   "legenda": "Transitividade",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "a00afa311af5",
+   "legenda": "Jornada para a 3FN",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "6a6c02e3a8b1",
+   "legenda": "Regras (axiomas) de Armstrong",
+   "mapa": false
+  },
+  {
+   "sec": "mapas",
+   "img": "2924adb7dd87",
+   "legenda": "Mapa mental: normalização",
+   "mapa": true
+  }
+ ],
+ "imp-direito-admi-02-nocoes-iniciais-e-administr": [
+  {
+   "sec": 0,
+   "img": "7aeed561e27b",
+   "legenda": "Direito público × direito privado",
+   "mapa": false
+  },
+  {
+   "sec": 5,
+   "img": "dbe41f6e6509",
+   "legenda": "Critérios (escolas) de definição do Direito Administrativo e suas críticas",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "fa4eea621627",
+   "legenda": "Fontes do Direito Administrativo: primárias e secundárias",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "d42ea0d0f541",
+   "legenda": "Hierarquia: CF → leis → atos normativos → atos administrativos",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "f25421ea2563",
+   "legenda": "Funções típicas e atípicas dos Poderes",
+   "mapa": false
+  },
+  {
+   "sec": 12,
+   "img": "54eaefea0a8d",
+   "legenda": "Estado unitário × Estado federado",
+   "mapa": false
+  },
+  {
+   "sec": 13,
+   "img": "250507cc79a5",
+   "legenda": "Parlamentarismo × presidencialismo",
+   "mapa": false
+  },
+  {
+   "sec": 13,
+   "img": "7e86563f389f",
+   "legenda": "Monarquia × república",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "02c123d94e30",
+   "legenda": "Função administrativa",
+   "mapa": false
+  },
+  {
+   "sec": 14,
+   "img": "b2c62b979d03",
+   "legenda": "Administração Pública em sentido amplo e estrito: subjetivo × objetivo",
+   "mapa": false
+  },
+  {
+   "sec": 14,
+   "img": "0c9f486e6bd4",
+   "legenda": "Administração Pública: sentido funcional (o quê?) e orgânico (quem?)",
+   "mapa": false
+  }
+ ],
+ "imp-direito-admi-03-organizacao-administrativa-": [
+  {
+   "sec": 0,
+   "img": "85ab7acb2485",
+   "legenda": "Atuação do Estado: entidades, órgãos e agentes",
+   "mapa": false
+  },
+  {
+   "sec": 1,
+   "img": "e300e7fae2e3",
+   "legenda": "Entidades políticas × entidades administrativas",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "a961d93eb76f",
+   "legenda": "Descentralização política × administrativa",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "65d6fa1f637f",
+   "legenda": "Descentralização por outorga (técnica, funcional, legal)",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "cfd359605b59",
+   "legenda": "Descentralização por colaboração (delegação, negocial)",
+   "mapa": false
+  },
+  {
+   "sec": 2,
+   "img": "b34e4221754e",
+   "legenda": "Descentralização territorial (geográfica)",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "67f04f20eac8",
+   "legenda": "Desconcentração: em razão da matéria, hierarquia ou território",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "239320e146ad",
+   "legenda": "Desconcentração × descentralização",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "cdb04436e903",
+   "legenda": "Teorias sobre a atuação do Estado: mandato, representação e órgão",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "220eecfd31a6",
+   "legenda": "Características dos órgãos públicos",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "e2751882a60f",
+   "legenda": "Classificação dos órgãos quanto à posição estatal",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "5659020753ea",
+   "legenda": "Classificação quanto à estrutura: simples × compostos",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "fd20f5d83e05",
+   "legenda": "Classificação quanto à situação funcional: singulares × colegiados",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "266bdc49e8e8",
+   "legenda": "Classificação quanto às funções: ativos, de controle e consultivos",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "11212776cc95",
+   "legenda": "Administração Direta",
+   "mapa": false
+  },
+  {
+   "sec": 8,
+   "img": "831bc959c34a",
+   "legenda": "Administração Indireta: quais são e características comuns",
+   "mapa": false
+  },
+  {
+   "sec": 10,
+   "img": "f113d9257e8a",
+   "legenda": "Autarquias: características",
+   "mapa": false
+  },
+  {
+   "sec": 14,
+   "img": "3e4bb3eb7b66",
+   "legenda": "Autarquias: responsabilidade, foro e conselhos profissionais",
+   "mapa": false
+  },
+  {
+   "sec": 16,
+   "img": "f8448e205779",
+   "legenda": "Autarquias sob regime especial",
+   "mapa": false
+  }
+ ],
+ "imp-direito-admi-04-organizacao-administrativa-": [
+  {
+   "sec": 2,
+   "img": "f98d8cc100b4",
+   "legenda": "Criação, extinção de EP/SEM e subsidiárias: autorização em lei",
+   "mapa": false
+  },
+  {
+   "sec": 4,
+   "img": "4264b0047f62",
+   "legenda": "Prestadora de serviço público × exploradora de atividade econômica",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "635c74795e1b",
+   "legenda": "Atividade desempenhada × regime jurídico predominante",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "9bd7fccbf78e",
+   "legenda": "Demissão de empregados das estatais",
+   "mapa": false
+  },
+  {
+   "sec": 13,
+   "img": "aee54c88e93d",
+   "legenda": "Licitações nas estatais (Lei 13.303/2016)",
+   "mapa": false
+  },
+  {
+   "sec": 14,
+   "img": "102a0df090ff",
+   "legenda": "Empresa pública × sociedade de economia mista: forma societária",
+   "mapa": false
+  }
+ ],
+ "imp-direito-cons-02-aplicacao-no-tempo-e-interp": [
+  {
+   "sec": 6,
+   "img": "6c586563a8aa",
+   "legenda": "Métodos de interpretação da Constituição",
+   "mapa": false
+  },
+  {
+   "sec": 6,
+   "img": "547500f47c0b",
+   "legenda": "Método tópico-problemático × hermenêutico-concretizador",
+   "mapa": false
+  }
+ ],
+ "imp-direito-cons-03-teoria-geral-dos-direitos-f": [
+  {
+   "sec": 2,
+   "img": "bd3004250dab",
+   "legenda": "Gerações (dimensões) dos direitos fundamentais",
+   "mapa": false
+  }
+ ],
+ "imp-direito-cons-04-direitos-individuais-e-cole": [
+  {
+   "sec": 1,
+   "img": "9726c3e235b4",
+   "legenda": "Direito à vida",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "19517247d346",
+   "legenda": "Igualdade na lei × perante a lei",
+   "mapa": false
+  },
+  {
+   "sec": 10,
+   "img": "7f48459272d0",
+   "legenda": "Liberdade de expressão: anonimato, exceções e limites",
+   "mapa": false
+  },
+  {
+   "sec": 7,
+   "img": "98c41557108e",
+   "legenda": "Direito de resposta",
+   "mapa": false
+  },
+  {
+   "sec": 12,
+   "img": "6013dc278924",
+   "legenda": "Quebra do sigilo bancário: quem pode",
+   "mapa": false
+  },
+  {
+   "sec": 13,
+   "img": "56f894ad0884",
+   "legenda": "Inviolabilidade domiciliar: conceito de casa e hipóteses de ingresso",
+   "mapa": false
+  }
+ ],
+ "imp-direito-cons-06-direitos-sociais": [
+  {
+   "sec": 0,
+   "img": "5c72ccfa9cb1",
+   "legenda": "Direitos sociais: origem, natureza e rol (art. 6º)",
+   "mapa": false
+  },
+  {
+   "sec": 3,
+   "img": "73ff1025194a",
+   "legenda": "Cláusula da reserva do possível e mínimo existencial",
+   "mapa": false
+  },
+  {
+   "sec": 11,
+   "img": "0aa0b18f0b7c",
+   "legenda": "Contribuição confederativa × contribuição sindical",
+   "mapa": false
+  }
+ ]
+}

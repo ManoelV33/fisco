@@ -20,7 +20,7 @@ const ordem = (a, b) => String(a).localeCompare(String(b), "pt", { numeric: true
 
 /* resumo v2 (mesmo formato do gerador) */
 /* ---------- resumo v2: formato de estudo (compartilhado entre o gerador e o Fisco) ---------- */
-const RES_TIPOS = ["texto", "lista", "tabela", "atencao", "excecao", "cai", "dica", "lei", "mnemonico", "esquema"];
+const RES_TIPOS = ["texto", "lista", "tabela", "atencao", "excecao", "cai", "dica", "lei", "mnemonico", "esquema", "figura"];
 function limparResumo(r) {
   const S = x => String(x == null ? "" : x).trim();
   const out = { visaoGeral: S(r && r.visaoGeral), secoes: [], autoteste: [], alertas: [] };
@@ -32,6 +32,7 @@ function limparResumo(r) {
       if (b.tipo === "lista" || b.tipo === "esquema") { const it = (b.itens || []).map(S).filter(Boolean); if (it.length) blocos.push({ tipo: b.tipo, titulo: S(b.titulo), itens: it }); }
       else if (b.tipo === "tabela") { const c = (b.colunas || []).map(S); const l = (b.linhas || []).filter(Array.isArray).map(x => x.map(S)); if (c.length && l.length) blocos.push({ tipo: "tabela", titulo: S(b.titulo), colunas: c, linhas: l }); }
       else if (b.tipo === "mnemonico") { if (S(b.nome)) blocos.push({ tipo: "mnemonico", nome: S(b.nome), explicacao: S(b.explicacao) }); }
+      else if (b.tipo === "figura") { if (/^[0-9a-f]{12}$/.test(S(b.img))) blocos.push({ tipo: "figura", img: S(b.img), legenda: S(b.legenda), mapa: !!b.mapa }); }
       else if (b.tipo === "lei") { if (S(b.texto)) blocos.push({ tipo: "lei", ref: S(b.ref), texto: S(b.texto) }); }
       else if (S(b.texto)) blocos.push({ tipo: b.tipo, texto: S(b.texto) });
     }
@@ -73,6 +74,7 @@ function htmlResumoV2(r, fmt, esc) {
     if (b.tipo === "esquema") return `<div class="rz-esq">${b.titulo ? `<p class="rz-lt">${fmt(b.titulo)}</p>` : ""}<ol>${b.itens.map(x => `<li>${fmt(x)}</li>`).join("")}</ol></div>`;
     if (b.tipo === "tabela") return `<div class="rz-tw">${b.titulo ? `<p class="rz-lt">${fmt(b.titulo)}</p>` : ""}<table class="rz-tb"><thead><tr>${b.colunas.map(c => `<th>${fmt(c)}</th>`).join("")}</tr></thead><tbody>${b.linhas.map(l => `<tr>${l.map(c => `<td>${fmt(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
     if (b.tipo === "mnemonico") return `<div class="rz-box rz-mnemonico"><span class="rz-tag">${icone.mnemonico}</span><p><strong>${fmt(b.nome)}</strong>${b.explicacao ? " — " + fmt(b.explicacao) : ""}</p></div>`;
+    if (b.tipo === "figura") return `<figure class="rz-fig${b.mapa ? " rz-mapa" : ""}"><button class="rz-figb" data-act="fig" data-fig="${b.img}" aria-label="Ampliar figura"><img data-fig="${b.img}" alt="${esc(b.legenda || "Esquema do PDF")}"></button>${b.legenda ? `<figcaption>${fmt(b.legenda)}<span class="rz-figdica">Toque para ampliar</span></figcaption>` : ""}</figure>`;
     if (b.tipo === "lei") return `<blockquote class="rz-box rz-lei"><span class="rz-tag">${b.ref ? esc(b.ref) : icone.lei}</span><p>${fmt(b.texto)}</p></blockquote>`;
     return `<div class="rz-box rz-${b.tipo}"><span class="rz-tag">${icone[b.tipo]}</span><p>${fmt(b.texto)}</p></div>`;
   };
@@ -106,7 +108,38 @@ const tema = id => TEMAS.find(t => t.id === id);
 const visivel = q => !q.reserva || (prog(q).t || 0) > 0;
 
 /* ---------------- cripto ---------------- */
-let encBytes = null;
+let encBytes = null, CHAVE = null;
+/* figuras (esquemas do PDF): cada uma num arquivo cifrado com a mesma chave, abertas sob demanda */
+const FIGS = new Map();
+async function figura(id) {
+  if (FIGS.has(id)) return FIGS.get(id);
+  const pr = (async () => {
+    const r = await fetch(`data/img/${id}.bin`).catch(() => null) || await caches.match(`data/img/${id}.bin`);
+    if (!r || !r.ok) throw new Error("figura");
+    const b = new Uint8Array(await r.arrayBuffer());
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, CHAVE, b.slice(12));
+    return URL.createObjectURL(new Blob([plain], { type: "image/webp" }));
+  })();
+  FIGS.set(id, pr); pr.catch(() => FIGS.delete(id));
+  return pr;
+}
+function carregarFiguras(raiz) {
+  raiz.querySelectorAll("img[data-fig]:not([src])").forEach(img => {
+    figura(img.dataset.fig).then(u => { img.src = u; }).catch(() => { img.closest("figure") && img.closest("figure").classList.add("rz-fig-erro"); });
+  });
+}
+function abrirFigura(id) {
+  const ov = document.createElement("div");
+  ov.className = "figov"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Figura ampliada");
+  ov.innerHTML = `<div class="figov-bar"><button data-z="1" class="figov-z">Tamanho real</button><button class="figov-x">Fechar</button></div><div class="figov-in"><img alt=""></div>`;
+  document.body.appendChild(ov); document.body.classList.add("sem-rolar");
+  figura(id).then(u => { ov.querySelector("img").src = u; });
+  const fechar = () => { ov.remove(); document.body.classList.remove("sem-rolar"); };
+  ov.querySelector(".figov-x").onclick = fechar;
+  ov.querySelector(".figov-z").onclick = ev => { const real = ov.classList.toggle("real"); ev.target.textContent = real ? "Ajustar à tela" : "Tamanho real"; };
+  ov.addEventListener("keydown", ev => { if (ev.key === "Escape") fechar(); });
+  ov.querySelector(".figov-x").focus();
+}
 async function baixarConteudo() {
   if (encBytes) return encBytes;
   const r = await fetch("data/conteudo.enc", { cache: "no-cache" }).catch(() => null) || await caches.match("data/conteudo.enc");
@@ -121,6 +154,7 @@ async function decifrar(codigo) {
   const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(codigo), "PBKDF2", false, ["deriveKey"]);
   const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: it, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
   const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, dados);  // lança erro se o código estiver errado
+  CHAVE = key;
   const txt = await new Response(new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
   return JSON.parse(txt);
 }
@@ -159,7 +193,9 @@ function abrirApp(conteudo) {
   render(); scrollTo(0, 0);
 }
 function bloquear() {
-  C = null; QS = []; QMAP = new Map(); TEMAS = []; CARDS = []; S.session = null;
+  C = null; QS = []; QMAP = new Map(); TEMAS = []; CARDS = []; S.session = null; CHAVE = null;
+  for (const pr of FIGS.values()) pr.then(u => URL.revokeObjectURL(u)).catch(() => { }); FIGS.clear();
+  document.querySelectorAll(".figov").forEach(x => x.remove()); document.body.classList.remove("sem-rolar");
   main.innerHTML = "";
   $("#app").hidden = true; $("#gate").hidden = false;
   setTimeout(() => senha.focus(), 50);
@@ -257,6 +293,7 @@ function render() {
   else if (S.view === "estudar") h = S.session ? vSessao() : vEstudar();
   else if (S.view === "resumo") h = vResumoTela();
   main.innerHTML = (S.msg ? `<div class="notice info row between" role="status"><span>${esc(S.msg)}</span><button class="ghost" data-act="msgx">Fechar</button></div>` : "") + h;
+  if (CHAVE) carregarFiguras(main);
 }
 function stats() {
   const cs = CARDS.map(cardP), qs = QS.filter(visivel).filter(q => !prog(q).anulada);
@@ -417,6 +454,7 @@ document.addEventListener("click", e => {
   const a = b.dataset.act, s = S.session;
   if (a === "nav") { S.view = b.dataset.v; if (S.view !== "estudar") S.session = null; render(); scrollTo(0, 0); }
   else if (a === "bloquear") bloquear();
+  else if (a === "fig") abrirFigura(b.dataset.fig);
   else if (a === "msgx") { S.msg = null; render(); }
   else if (a === "tema") { S.view = "tema"; S.temaId = b.dataset.id; S.tab = "questoes"; render(); scrollTo(0, 0); }
   else if (a === "tab") { S.tab = b.dataset.v; render(); }
