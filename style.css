@@ -120,7 +120,7 @@ summary .s{min-width:0;flex:1}
 
 /* ---------- navegação inferior ---------- */
 nav.bottom{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));z-index:5}
-nav.bottom .in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);height:var(--nav-h)}
+nav.bottom .in{max-width:720px;margin:0 auto;display:grid;grid-template-columns:repeat(2,1fr);height:var(--nav-h)}
 nav.bottom button{border:0;background:none;border-radius:0;flex-direction:column;gap:2px;font-size:.76rem;color:var(--muted)}
 nav.bottom button[aria-current="page"]{color:var(--accent)}
 nav.bottom svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -173,3 +173,10 @@ nav.bottom svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width
 .rz-q[open] summary{margin-bottom:6px}
 .rz-q p{margin:0;color:var(--ink)}
 mark.mk{background:linear-gradient(transparent 12%,var(--marker) 12%,var(--marker) 88%,transparent 88%);color:inherit;padding:0 2px;border-radius:2px}
+
+/* seletor "o que estudar" */
+.lbl{font-weight:700;font-size:.88rem}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #cfd5d1;border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;border-left:1px solid #cfd5d1;min-height:48px;background:var(--paper);color:var(--ink-2)}
+.seg button:first-child{border-left:0}
+.seg button[aria-checked="true"]{background:var(--accent);color:#fff}

@@ -149,7 +149,7 @@ form.addEventListener("submit", async e => {
 baixarConteudo().catch(() => { });
 
 /* ---------------- app ---------------- */
-const S = { view: "inicio", temaId: null, tab: "questoes", session: null, opts: { materia: "", modo: "misto", n: 10 } };
+const S = { view: "inicio", temaId: null, tab: "questoes", session: null, opts: { materia: "", temaId: "", modo: "questoes" } };
 const main = $("#main");
 function abrirApp(conteudo) {
   C = conteudo; montarIndices();
@@ -201,13 +201,14 @@ function montarSessao(o) {
     return sessao(qs.map(q => ({ k: "q", id: q.id })), o);
   }
   if (o.modo === "parecidas") {
-    const bases = o.base ? [QMAP.get(o.base)].filter(Boolean) : QS.filter(q => visivel(q) && prog(q).e && filtro(q)).sort((a, b) => (prog(b).u || 0) - (prog(a).u || 0));
+    const bases = o.bases ? o.bases.map(id => QMAP.get(id)).filter(Boolean) : o.base ? [QMAP.get(o.base)].filter(Boolean) : QS.filter(q => visivel(q) && prog(q).e && filtro(q)).sort((a, b) => (prog(b).u || 0) - (prog(a).u || 0));
     const vistos = new Set(bases.map(b => b.id)), out = [];
     const filas = bases.map(b => simsOf(b).filter(x => !prog(x).anulada && (!prog(x).t || prog(x).e)));
     let k = 0;
     while (out.length < n && filas.some(f => f.length)) { const f = filas[k++ % filas.length]; while (f.length) { const x = f.shift(); if (!vistos.has(x.id)) { vistos.add(x.id); out.push({ k: "q", id: x.id }); break; } } }
     return sessao(out, o, { semBase: !bases.length });
   }
+  if (o.modo === "cards-todos") return sessao(CARDS.filter(filtroCard(o)).map(c => ({ k: "c", id: c.id })), Object.assign({}, o, { modo: "cards" }));
   let cards = [];
   if (o.modo !== "questoes") {
     const cs = CARDS.filter(filtroCard(o)).map(cardP);
@@ -235,12 +236,11 @@ function itemAtual() { const s = S.session, it = s.itens[s.i]; if (!it) return n
 /* render */
 function render() {
   if (!C) return;
-  document.querySelectorAll("nav.bottom button").forEach(b => b.setAttribute("aria-current", b.dataset.v === (S.view === "tema" ? "conteudo" : S.view) ? "page" : "false"));
+  document.querySelectorAll("nav.bottom button").forEach(b => b.setAttribute("aria-current", b.dataset.v === (S.view === "resumo" ? "estudar" : S.view) ? "page" : "false"));
   let h = "";
   if (S.view === "inicio") h = vInicio();
   else if (S.view === "estudar") h = S.session ? vSessao() : vEstudar();
-  else if (S.view === "conteudo") h = vConteudo();
-  else if (S.view === "tema") h = vTema();
+  else if (S.view === "resumo") h = vResumoTela();
   main.innerHTML = (S.msg ? `<div class="notice info row between" role="status"><span>${esc(S.msg)}</span><button class="ghost" data-act="msgx">Fechar</button></div>` : "") + h;
 }
 function stats() {
@@ -281,32 +281,48 @@ function vConteudo() {
   return `<header class="stack" style="gap:6px"><span class="eyebrow">Seu material</span><h1>Temas</h1></header>
   ${materias().map(m => `<section class="stack" style="gap:4px"><h3 class="materia-h">${esc(m)}</h3><div class="panel" style="padding-block:4px"><div class="list">${TEMAS.filter(t => t.materia === m).sort((a, b) => ordem(a.titulo, b.titulo)).map(itemTema).join("")}</div></div></section>`).join("")}`;
 }
+function temasDe(m) { return TEMAS.filter(t => !m || t.materia === m).sort((a, b) => ordem(a.materia, b.materia) || ordem(a.titulo, b.titulo)); }
 function vEstudar() {
-  const o = S.opts;
-  return `<header class="stack" style="gap:6px"><span class="eyebrow">Sessão de estudo</span><h1>Estudar</h1></header>
+  const o = S.opts, ts = temasDe(o.materia);
+  if (o.temaId && !ts.some(t => t.id === o.temaId)) o.temaId = "";
+  const t = tema(o.temaId);
+  const nq = QS.filter(q => q.temaId === o.temaId && !q.reserva).length, nc = CARDS.filter(c => c.temaId === o.temaId).length;
+  const nres = o.temaId ? QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t).length : 0;
+  const erradas = QS.filter(q => (!o.temaId || q.temaId === o.temaId) && (!o.materia || q.materia === o.materia) && visivel(q) && prog(q).e).length;
+  const opc = [["resumo", "Resumo"], ["questoes", "Questões"], ["cards", "Flashcards"]];
+  const semResumo = o.modo === "resumo" && !(t && t.resumo);
+  return `<header class="stack" style="gap:6px"><span class="eyebrow">O que vamos estudar?</span><h1>Estudar</h1></header>
   <section class="panel">
-    <div class="grid2">
-      <label for="o-materia">Matéria<select id="o-materia"><option value="">Todas</option>${materias().map(m => `<option ${o.materia === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
-      <label for="o-modo">O que revisar<select id="o-modo">
-        <option value="misto" ${o.modo === "misto" ? "selected" : ""}>Cards e questões</option>
-        <option value="questoes" ${o.modo === "questoes" ? "selected" : ""}>Só questões</option>
-        <option value="cards" ${o.modo === "cards" ? "selected" : ""}>Só flashcards</option>
-        <option value="parecidas" ${o.modo === "parecidas" ? "selected" : ""}>Parecidas com as que errei</option></select></label>
-      <label for="o-n">Tamanho<select id="o-n">${[5, 10, 20, 30].map(n => `<option value="${n}" ${o.n == n ? "selected" : ""}>${n} itens</option>`).join("")}</select></label>
-    </div>
-    <button class="primary wide" data-act="iniciar">Começar</button>
-    <p class="small muted">Flashcards seguem a repetição espaçada; questões erradas voltam primeiro.</p>
+    <label for="o-materia">Matéria<select id="o-materia"><option value="">Todas as matérias</option>${materias().map(m => `<option ${o.materia === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
+    <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "resumo" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
+    <div class="stack" style="gap:6px"><span class="lbl">O que estudar</span>
+      <div class="seg" role="radiogroup" aria-label="O que estudar">${opc.map(([k, n]) => `<button role="radio" aria-checked="${o.modo === k}" data-act="modo" data-v="${k}">${n}</button>`).join("")}</div></div>
+    ${o.temaId ? `<p class="small muted">${nq} questões principais${nres ? ` · ${nres} extras` : ""} · ${nc} flashcards · ${t && t.resumo ? "resumo disponível" : "resumo ainda não gerado"}</p>` : ""}
+    <button class="primary wide" data-act="iniciar" ${(o.modo === "resumo" && !o.temaId) || semResumo ? "disabled" : ""}>${o.modo === "resumo" ? "Abrir resumo" : o.modo === "cards" ? "Revisar flashcards" : "Resolver questões"}</button>
+    ${o.modo === "resumo" && !o.temaId ? `<p class="small muted">Escolha um conteúdo para abrir o resumo.</p>` : semResumo ? `<p class="small muted">O resumo deste conteúdo entra na próxima atualização.</p>` : ""}
+    ${o.modo === "questoes" && nres ? `<button class="wide" data-act="extras">Fazer as questões extras (${nres})</button>` : ""}
+    ${o.modo === "questoes" && erradas ? `<button class="wide" data-act="parecidas-sel">Parecidas com as que errei (${erradas} ${erradas === 1 ? "erro" : "erros"})</button>` : ""}
   </section>`;
+}
+function vResumoTela() {
+  const t = tema(S.temaId); if (!t) { S.view = "estudar"; return vEstudar(); }
+  const r = t.resumo && t.resumo.v === 2 ? limparResumo(t.resumo) : null;
+  return `<header class="stack" style="gap:8px"><button class="ghost" data-act="voltar" style="align-self:flex-start;padding-left:0">← Estudar</button><span class="eyebrow">${esc(t.materia)}</span><h1>${esc(t.titulo)}</h1></header>
+  ${r ? `<section class="panel">${htmlResumoV2(r, fmt, esc)}</section>` : `<section class="panel empty"><p>O resumo deste conteúdo entra na próxima atualização.</p></section>`}
+  <div class="stack" style="gap:8px"><button class="primary wide" data-act="ir-questoes">Resolver as questões deste conteúdo</button>${CARDS.some(c => c.temaId === t.id) ? `<button class="wide" data-act="ir-cards">Revisar os flashcards</button>` : ""}</div>`;
 }
 function vSessao() {
   const s = S.session, tot = s.itens.length;
   if (!tot && s.origem.modo === "parecidas") return `<header class="stack"><span class="eyebrow">Parecidas com as que errei</span><h1>${s.semBase ? "Nenhum erro ainda" : "Sem parecidas pendentes"}</h1></header><div class="panel"><p>${s.semBase ? "Você ainda não errou questões com esse filtro." : "Não há mais questões parecidas ainda não resolvidas no seu material para esses erros."}</p><div class="row"><button data-act="sair">Voltar</button></div></div>`;
-  if (!tot) return `<header class="stack"><span class="eyebrow">Sessão</span><h1>Nada para revisar aqui</h1></header><div class="panel"><p>Não há itens pendentes com esse filtro.</p><div class="row"><button data-act="sair">Voltar</button></div></div>`;
+  if (!tot && s.origem.modo === "cards" && CARDS.some(filtroCard(s.origem))) return `<header class="stack"><span class="eyebrow">Flashcards</span><h1>Tudo em dia</h1></header><div class="panel"><p>Nenhum card vencido aqui agora. Pela repetição espaçada, eles voltam no dia certo.</p><div class="row"><button class="primary" data-act="cards-todos">Revisar todos mesmo assim</button><button data-act="sair">Voltar</button></div></div>`;
+  if (!tot) return `<header class="stack"><span class="eyebrow">Sessão</span><h1>Nada por aqui ainda</h1></header><div class="panel"><p>${s.origem.modo === "cards" ? "Os flashcards deste conteúdo entram na próxima atualização." : "Não há questões pendentes com essa escolha."}</p><div class="row"><button data-act="sair">Voltar</button></div></div>`;
   if (s.i >= tot) {
     const p = s.feitas ? Math.round(100 * s.acertos / s.feitas) : null;
     return `<header class="stack" style="gap:6px"><span class="eyebrow">Sessão concluída</span><h1>${p === null ? "Revisão feita" : p + "% de acertos"}</h1></header>
     <section class="panel"><div class="today"><div><b>${s.acertos}/${s.feitas}</b><span class="small muted">questões certas</span></div><div><b>${s.cardsFeitos}</b><span class="small muted">cards revisados</span></div><div><b>${tot}</b><span class="small muted">itens</span></div></div>
-    <div class="row"><button class="primary" data-act="denovo">Outra sessão igual</button><button data-act="sair">Encerrar</button></div></section>`;
+    ${(() => { const o = s.origem; const nres = o.temaId ? QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t).length : 0; return o.modo === "questoes" && nres ? `<button class="wide" data-act="extras-de" data-id="${esc(o.temaId)}">Fazer as questões extras (${nres})</button>` : ""; })()}
+    ${s.feitas > s.acertos ? `<button class="wide" data-act="parecidas-sessao">Parecidas com as que errei nesta sessão</button>` : ""}
+    <div class="row"><button class="primary" data-act="denovo">Repetir</button><button data-act="sair">Voltar ao Estudar</button></div></section>`;
   }
   const cur = itemAtual(); if (!cur || !cur.x) { s.i++; return vSessao(); }
   const t = tema(cur.x.temaId) || {};
@@ -366,9 +382,8 @@ function vTema() {
 
 /* ações */
 document.addEventListener("change", e => {
-  if (e.target.id === "o-materia") S.opts.materia = e.target.value;
-  if (e.target.id === "o-modo") S.opts.modo = e.target.value;
-  if (e.target.id === "o-n") S.opts.n = +e.target.value;
+  if (e.target.id === "o-materia") { S.opts.materia = e.target.value; S.opts.temaId = ""; render(); }
+  if (e.target.id === "o-tema") { S.opts.temaId = e.target.value; render(); }
 });
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b || b.disabled || !C) return;
@@ -379,14 +394,27 @@ document.addEventListener("click", e => {
   else if (a === "tema") { S.view = "tema"; S.temaId = b.dataset.id; S.tab = "questoes"; render(); scrollTo(0, 0); }
   else if (a === "tab") { S.tab = b.dataset.v; render(); }
   else if (a === "rapida") iniciar({ materia: "", modo: "misto", n: 10 });
-  else if (a === "iniciar") iniciar(Object.assign({}, S.opts));
+  else if (a === "modo") { S.opts.modo = b.dataset.v; render(); }
+  else if (a === "iniciar") {
+    const o = S.opts;
+    if (o.modo === "resumo") { if (!o.temaId) return; S.view = "resumo"; S.temaId = o.temaId; render(); scrollTo(0, 0); }
+    else iniciar({ modo: o.modo, materia: o.materia, temaId: o.temaId, n: o.modo === "cards" ? 500 : (o.temaId ? 60 : 20) });
+  }
+  else if (a === "voltar") { S.view = "estudar"; S.session = null; render(); scrollTo(0, 0); }
+  else if (a === "ir-questoes") iniciar({ modo: "questoes", temaId: S.temaId, n: 60 });
+  else if (a === "ir-cards") iniciar({ modo: "cards", temaId: S.temaId, n: 500 });
+  else if (a === "extras") iniciar({ modo: "extras", n: 30, temaId: S.opts.temaId });
+  else if (a === "extras-de") iniciar({ modo: "extras", n: 30, temaId: b.dataset.id });
+  else if (a === "parecidas-sel") iniciar({ modo: "parecidas", n: 15, materia: S.opts.materia, temaId: S.opts.temaId });
+  else if (a === "parecidas-sessao") { const ids = s.itens.filter(it => it.k === "q" && prog(QMAP.get(it.id) || {}).e).map(it => it.id); S.session = null; if (ids.length) iniciar({ modo: "parecidas", n: 15, base: ids[0], bases: ids }); }
+  else if (a === "cards-todos") iniciar(Object.assign({}, s.origem, { modo: "cards-todos" }));
   else if (a === "sess-tema") iniciar({ materia: "", modo: b.dataset.modo, n: 40, temaId: S.temaId });
   else if (a === "extras-tema") iniciar({ modo: "extras", n: 30, temaId: S.temaId });
   else if (a === "parecidas-home") iniciar({ modo: "parecidas", n: 10 });
   else if (a === "parecidas-tema") iniciar({ modo: "parecidas", n: 10, temaId: S.temaId });
   else if (a === "parecidas-de") iniciar({ modo: "parecidas", n: 10, base: b.dataset.id });
   else if (a === "denovo") iniciar(s.origem);
-  else if (a === "sair") { S.session = null; render(); scrollTo(0, 0); }
+  else if (a === "sair") { S.session = null; S.view = "estudar"; render(); scrollTo(0, 0); }
   else if (a === "revelar") { s.rev = true; render(); }
   else if (a === "nota") {
     const c = cardP(itemAtual().x), q = +b.dataset.q;
