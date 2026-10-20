@@ -13,6 +13,7 @@ def norm_furn(l):
 ZW_RE = re.compile("[\u200b\u200c\u200d\u2060\u2063\ufeff\u00ad]")
 def pages_of(path):
     t = ZW_RE.sub("", open(path, encoding="utf-8", errors="replace").read())
+    t = re.sub(r"==[0-9a-f]{6}==", "", t)
     pg = t.split("\f")
     if pg and not pg[-1].strip():
         pg = pg[:-1]

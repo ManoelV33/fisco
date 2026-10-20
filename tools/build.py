@@ -41,6 +41,13 @@ def main():
         for t in temas:
             if t["id"] in res:
                 t["resumo"] = res[t["id"]]
+    marca = re.compile(r"==[0-9a-f]{6}==")
+    def limpar(o):
+        if isinstance(o, str): return marca.sub("", o)
+        if isinstance(o, list): return [limpar(x) for x in o]
+        if isinstance(o, dict): return {k: limpar(v) for k, v in o.items()}
+        return o
+    temas, questoes = limpar(temas), limpar(questoes)
     conteudo = {"geradoEm": int(time.time() * 1000), "temas": temas, "questoes": questoes, "cards": cards}
     bruto = gzip.compress(json.dumps(conteudo, ensure_ascii=False, separators=(",", ":")).encode(), 9)
     salt, iv = secrets.token_bytes(16), secrets.token_bytes(12)

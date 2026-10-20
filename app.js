@@ -9,13 +9,79 @@
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const fmtInline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+const fmtInline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/==(.+?)==/g, '<mark class="mk">$1</mark>');
 const fmt = s => String(s ?? "").split(/```\n?/).map((p, i) => i % 2 ? `<pre class="tbl">${esc(p.replace(/\n$/, ""))}</pre>` : fmtInline(p)).join("");
 const fmtDoc = s => String(s ?? "").split(/```\n?/).map((p, i) => i % 2 ? `<pre class="tbl">${esc(p.replace(/\n$/, ""))}</pre>` : fmtInline(p).replace(/^## (.+)$/gm, '<span class="res-h">$1</span>')).join("");
 const L = ["A", "B", "C", "D", "E"];
 const DAY = 86400000;
 const now = () => Date.now();
 const ordem = (a, b) => String(a).localeCompare(String(b), "pt", { numeric: true, sensitivity: "base" });
+
+/* resumo v2 (mesmo formato do gerador) */
+/* ---------- resumo v2: formato de estudo (compartilhado entre o gerador e o Fisco) ---------- */
+const RES_TIPOS = ["texto", "lista", "tabela", "atencao", "excecao", "cai", "dica", "lei", "mnemonico", "esquema"];
+function limparResumo(r) {
+  const S = x => String(x == null ? "" : x).trim();
+  const out = { visaoGeral: S(r && r.visaoGeral), secoes: [], autoteste: [], alertas: [] };
+  for (const s of (r && r.secoes) || []) {
+    if (!s || !Array.isArray(s.blocos)) continue;
+    const blocos = [];
+    for (const b of s.blocos) {
+      if (!b || !RES_TIPOS.includes(b.tipo)) continue;
+      if (b.tipo === "lista" || b.tipo === "esquema") { const it = (b.itens || []).map(S).filter(Boolean); if (it.length) blocos.push({ tipo: b.tipo, titulo: S(b.titulo), itens: it }); }
+      else if (b.tipo === "tabela") { const c = (b.colunas || []).map(S); const l = (b.linhas || []).filter(Array.isArray).map(x => x.map(S)); if (c.length && l.length) blocos.push({ tipo: "tabela", titulo: S(b.titulo), colunas: c, linhas: l }); }
+      else if (b.tipo === "mnemonico") { if (S(b.nome)) blocos.push({ tipo: "mnemonico", nome: S(b.nome), explicacao: S(b.explicacao) }); }
+      else if (b.tipo === "lei") { if (S(b.texto)) blocos.push({ tipo: "lei", ref: S(b.ref), texto: S(b.texto) }); }
+      else if (S(b.texto)) blocos.push({ tipo: b.tipo, texto: S(b.texto) });
+    }
+    if (blocos.length) out.secoes.push({ titulo: S(s.titulo), blocos });
+  }
+  for (const q of (r && r.autoteste) || []) if (q && S(q.p) && S(q.r)) out.autoteste.push({ p: S(q.p), r: S(q.r) });
+  out.alertas = ((r && r.alertas) || []).map(S).filter(Boolean);
+  return out;
+}
+const PROMPT_RESUMO_V2 = `Tarefa: escrever o RESUMO DE ESTUDO deste trecho, no padrão de quem ensina técnicas de resumo eficientes para concursos. Ele será lido no celular e revisado várias vezes.
+
+Como escrever (técnicas obrigatórias):
+- Divida em seções curtas por assunto (uma ideia central por seção), na ordem lógica do material.
+- Frases curtas e diretas, estilo "telegráfico", sem enrolação. Use "→" para consequência e "≠" para distinções.
+- Marca-texto com ==assim== SOMENTE nas palavras-chave que decidem questões (no máximo um trecho marcado por bloco). Use **negrito** para termos técnicos e nomes de institutos.
+- Sempre que houver comparação (A x B, regra x exceção, tipos, prazos, competências), monte uma TABELA.
+- Use quadros: "atencao" para pegadinhas clássicas; "excecao" para exceções à regra; "cai" para o que mais é cobrado (especialmente CEBRASPE/CESPE e FGV); "dica" para macetes de interpretação; "lei" para trechos literais de lei ou súmula que estejam no material.
+- "esquema" para sequências e etapas (ex.: passos de um procedimento, estrutura de uma demonstração).
+- Mnemônico só quando ajudar a decorar uma lista do próprio material (pode ser sigla com as iniciais dos itens).
+- No fim, 4 a 8 perguntas de autoteste (recuperação ativa), com respostas curtas tiradas do material.
+
+Responda SOMENTE com JSON:
+{"visaoGeral":"2 frases que situam o assunto",
+ "secoes":[{"titulo":"","blocos":[
+   {"tipo":"texto","texto":"..."},
+   {"tipo":"lista","titulo":"opcional","itens":["..."]},
+   {"tipo":"tabela","titulo":"","colunas":["",""],"linhas":[["",""]]},
+   {"tipo":"atencao","texto":""},{"tipo":"excecao","texto":""},{"tipo":"cai","texto":""},{"tipo":"dica","texto":""},
+   {"tipo":"lei","ref":"art. X da Lei Y","texto":"trecho literal do material"},
+   {"tipo":"esquema","titulo":"","itens":["etapa 1","etapa 2"]},
+   {"tipo":"mnemonico","nome":"","explicacao":""}]}],
+ "autoteste":[{"p":"pergunta","r":"resposta"}],
+ "alertas":["observação sua para conferir na fonte, se notar erro ou desatualização no material; senão lista vazia"]}`;
+function htmlResumoV2(r, fmt, esc) {
+  const icone = { atencao: "Atenção", excecao: "Exceção", cai: "Cai em prova", dica: "Dica", lei: "Letra da lei", mnemonico: "Para memorizar" };
+  const bloco = b => {
+    if (b.tipo === "texto") return `<p class="rz-p">${fmt(b.texto)}</p>`;
+    if (b.tipo === "lista") return `${b.titulo ? `<p class="rz-lt">${fmt(b.titulo)}</p>` : ""}<ul class="rz-ul">${b.itens.map(x => `<li>${fmt(x)}</li>`).join("")}</ul>`;
+    if (b.tipo === "esquema") return `<div class="rz-esq">${b.titulo ? `<p class="rz-lt">${fmt(b.titulo)}</p>` : ""}<ol>${b.itens.map(x => `<li>${fmt(x)}</li>`).join("")}</ol></div>`;
+    if (b.tipo === "tabela") return `<div class="rz-tw">${b.titulo ? `<p class="rz-lt">${fmt(b.titulo)}</p>` : ""}<table class="rz-tb"><thead><tr>${b.colunas.map(c => `<th>${fmt(c)}</th>`).join("")}</tr></thead><tbody>${b.linhas.map(l => `<tr>${l.map(c => `<td>${fmt(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+    if (b.tipo === "mnemonico") return `<div class="rz-box rz-mnemonico"><span class="rz-tag">${icone.mnemonico}</span><p><strong>${fmt(b.nome)}</strong>${b.explicacao ? " — " + fmt(b.explicacao) : ""}</p></div>`;
+    if (b.tipo === "lei") return `<blockquote class="rz-box rz-lei"><span class="rz-tag">${b.ref ? esc(b.ref) : icone.lei}</span><p>${fmt(b.texto)}</p></blockquote>`;
+    return `<div class="rz-box rz-${b.tipo}"><span class="rz-tag">${icone[b.tipo]}</span><p>${fmt(b.texto)}</p></div>`;
+  };
+  return `<article class="rz">
+    ${r.visaoGeral ? `<p class="rz-vg">${fmt(r.visaoGeral)}</p>` : ""}
+    ${r.secoes.map((s, i) => `<section class="rz-sec"><h3 class="rz-h"><span class="rz-n">${String(i + 1).padStart(2, "0")}</span>${fmt(s.titulo)}</h3>${s.blocos.map(bloco).join("")}</section>`).join("")}
+    ${r.autoteste.length ? `<section class="rz-sec rz-auto"><h3 class="rz-h">Teste-se</h3><p class="rz-p small">Tente responder antes de abrir.</p>${r.autoteste.map(q => `<details class="rz-q"><summary>${fmt(q.p)}</summary><p>${fmt(q.r)}</p></details>`).join("")}</section>` : ""}
+    ${r.alertas.length ? `<div class="rz-box rz-atencao"><span class="rz-tag">Conferir na fonte</span><ul class="rz-ul">${r.alertas.map(x => `<li>${fmt(x)}</li>`).join("")}</ul></div>` : ""}
+  </article>`;
+}
 
 /* ---------------- progresso local (só neste aparelho) ---------------- */
 const PKEY = "cf.progresso.v1";
@@ -189,7 +255,7 @@ function vInicio() {
   QS.forEach(q => { const p = prog(q); if (!p.t || p.anulada) return; const m = q.materia || "Outras"; porM[m] = porM[m] || { t: 0, a: 0 }; porM[m].t += p.t; porM[m].a += p.a || 0; });
   const ms = Object.entries(porM).sort((a, b) => a[1].a / a[1].t - b[1].a / b[1].t);
   return `
-  <header class="stack" style="gap:6px"><span class="eyebrow">${esc(dia)}</span><div class="brand"><svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="27,17 79,17 73,33 45,33 45,43 69,43 63,58 45,58 45,83 27,83" fill="#c4cbd4"/></svg><h1>Fisco</h1></div></header>
+  <header class="stack" style="gap:6px"><span class="eyebrow">${esc(dia)}</span><h1>Rumo ao Fisco</h1></header>
   <section class="panel">
     <h2>Para hoje</h2>
     <div class="today">
@@ -284,13 +350,10 @@ function vTema() {
     </section>
     <section class="panel" style="padding-block:6px">${qs.map(q => `<details><summary><span class="s clamp">${esc(q.enunciado.replace(/```/g, ""))}</span>${st(q)}</summary><div class="stack small" style="margin-top:8px;gap:6px">${q.tipo === "me" ? `<div>${q.alternativas.map((a, i) => `<div><strong>${L[i]})</strong> ${fmt(a)}</div>`).join("")}</div>` : ""}<div><strong>Gabarito: ${q.tipo === "ce" ? (q.gabarito === "C" ? "Certo" : "Errado") : q.gabarito}</strong>${q.fonteProva ? " · " + esc(q.fonteProva) : ""}</div><div style="white-space:pre-wrap">${fmt(q.comentario)}</div></div></details>`).join("")}</section>`;
   } else if (S.tab === "resumo") {
-    const r = t.resumo;
-    body = (t.resumoTexto ? `<section class="panel"><div class="row between"><h2>Resumo do professor</h2><span class="chip ok">do seu PDF</span></div><div style="white-space:pre-wrap">${fmtDoc(t.resumoTexto)}</div></section>` : "") +
-      (r ? `<section class="panel"><h2>Revisão rápida</h2><p><span class="hl">${fmt(r.visaoGeral)}</span></p>${(r.pontos || []).map(p => `<div class="ponto stack" style="gap:4px"><h3>${fmt(p.titulo)}</h3><p>${fmt(p.texto)}</p></div>`).join("")}
-        ${(r.pegadinhas || []).length ? `<div class="res-sec"><h3>Pegadinhas de prova</h3><ul>${r.pegadinhas.map(x => `<li>${fmt(x)}</li>`).join("")}</ul></div>` : ""}
-        ${(r.mnemonicos || []).length ? `<div class="res-sec"><h3>Para memorizar</h3><ul>${r.mnemonicos.map(m => `<li><strong>${fmt(m.nome)}</strong> ${m.explicacao ? "· " + fmt(m.explicacao) : ""}</li>`).join("")}</ul></div>` : ""}
-        ${(r.alertas || []).length ? `<div class="notice"><strong>Conferir na fonte</strong><ul style="margin:6px 0 0;padding-left:20px">${r.alertas.map(x => `<li>${fmt(x)}</li>`).join("")}</ul></div>` : ""}</section>` : "") ||
-      `<section class="panel empty"><p>Este tema ainda não tem resumo. Ele entra na próxima atualização do conteúdo.</p></section>`;
+    const r = t.resumo && t.resumo.v === 2 ? limparResumo(t.resumo) : null;
+    const prof = t.resumoTexto ? `<details class="panel prof-box" ${r ? "" : "open"}><summary>Resumo do professor <span class="chip ok">texto do PDF</span></summary><div class="prof">${fmtDoc(t.resumoTexto)}</div></details>` : "";
+    body = r ? `<section class="panel">${htmlResumoV2(r, fmt, esc)}</section>${prof}` :
+      prof || `<section class="panel empty"><p>O resumo deste tema entra na próxima atualização do conteúdo.</p></section>`;
   } else {
     const venc = cs.filter(vencido).length;
     body = cs.length ? `<section class="panel"><button class="primary" data-act="sess-tema" data-modo="cards" ${venc ? "" : "disabled"}>Revisar cards deste tema${venc ? ` (${venc})` : ""}</button>${venc ? "" : `<p class="small muted">Nenhum card vencido neste tema agora.</p>`}</section>
