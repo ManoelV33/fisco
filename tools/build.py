@@ -22,6 +22,9 @@ def main():
     ap.add_argument("--extra")
     ap.add_argument("--figuras", help="JSON {temaId: [{sec, img, legenda, mapa}]} com a posição das figuras nos resumos")
     ap.add_argument("--figdir", help="pasta com <temaId>/<img>.webp")
+    ap.add_argument("--teoria", help="pasta com <temaId>.pdf/.json (conteúdo do PDF sem questões)")
+    ap.add_argument("--meus", help="pasta com <slug>.pdf/.json (resumos do Manoel, por matéria)")
+    ap.add_argument("--sem-resumo", action="store_true", help="não inclui o Resumo Fisco")
     a = ap.parse_args()
     if len(a.codigo) < 4:
         raise SystemExit("A senha precisa ter pelo menos 4 caracteres.")
@@ -41,7 +44,7 @@ def main():
         cards = ex.get("cards", [])
         res = ex.get("resumos", {})
         for t in temas:
-            if t["id"] in res:
+            if t["id"] in res and not a.sem_resumo:
                 t["resumo"] = res[t["id"]]
     marca = re.compile(r"==[0-9a-f]{6}==")
     def limpar(o):
@@ -73,7 +76,20 @@ def main():
             if extra_sec:
                 r["secoes"].append({"titulo": "Mapas mentais e esquemas do PDF", "blocos": extra_sec})
             t["resumo"] = r
-    conteudo = {"geradoEm": int(time.time() * 1000), "temas": temas, "questoes": questoes, "cards": cards}
+    docs = {}  # id do documento -> caminho do PDF
+    import hashlib
+    def doc_id(caminho):
+        h = hashlib.sha1(open(caminho, "rb").read()).hexdigest()[:12]; docs[h] = caminho; return h
+    if a.teoria:
+        for t in temas:
+            j = os.path.join(a.teoria, t["id"] + ".json")
+            if os.path.exists(j):
+                m = json.load(open(j)); t["teoria"] = {"doc": doc_id(os.path.join(a.teoria, t["id"] + ".pdf")), "paginas": m["paginas"], "indice": m["indice"]}
+    meus = {}
+    if a.meus:
+        for j in glob.glob(os.path.join(a.meus, "*.json")):
+            m = json.load(open(j)); meus[m["materia"]] = {"doc": doc_id(j[:-5] + ".pdf"), "paginas": m["paginas"], "indice": m["indice"]}
+    conteudo = {"geradoEm": int(time.time() * 1000), "temas": temas, "questoes": questoes, "cards": cards, "meus": meus}
     bruto = gzip.compress(json.dumps(conteudo, ensure_ascii=False, separators=(",", ":")).encode(), 9)
     destino = os.path.join(RAIZ, "data", "conteudo.enc")
     salt = None
@@ -103,13 +119,23 @@ def main():
         alvo = os.path.join(imgdir, fid + ".bin")
         if not (os.path.exists(alvo) and open(alvo, "rb").read() == out):
             open(alvo, "wb").write(out)
+    docdir = os.path.join(RAIZ, "data", "doc"); os.makedirs(docdir, exist_ok=True)
+    for nome in os.listdir(docdir):
+        if nome[:-4] not in docs: os.remove(os.path.join(docdir, nome))
+    for did, caminho in docs.items():
+        alvo = os.path.join(docdir, did + ".bin")
+        dados = open(caminho, "rb").read()
+        fiv = hashlib.sha256(chave + b"doc" + did.encode()).digest()[:12]
+        out = fiv + AESGCM(chave).encrypt(fiv, dados, None)
+        if not (os.path.exists(alvo) and open(alvo, "rb").read() == out): open(alvo, "wb").write(out)
     versao = time.strftime("%Y%m%d%H%M%S")
     sw = open(os.path.join(RAIZ, "sw.js")).read()
     sw = re.sub(r'const VERSAO = "[^"]*";', f'const VERSAO = "{versao}";', sw)
     lista = json.dumps(sorted(f"data/img/{x}.bin" for x in usadas))
     sw = re.sub(r'const FIGURAS = \[[^\]]*\];', f'const FIGURAS = {lista};', sw)
+    sw = re.sub(r'const DOCS = \[[^\]]*\];', 'const DOCS = ' + json.dumps(sorted(f"data/doc/{x}.bin" for x in docs)) + ';', sw)
     open(os.path.join(RAIZ, "sw.js"), "w").write(sw)
-    print(f"{len(temas)} temas, {len(questoes)} questões, {len(cards)} cards -> data/conteudo.enc ({len(cifrado)//1024} KB), {len(usadas)} figuras, versão {versao}")
+    print(f"{len(temas)} temas, {len(questoes)} questões, {len(cards)} cards -> data/conteudo.enc ({len(cifrado)//1024} KB), {len(usadas)} figuras, {len(docs)} PDFs ({sum(os.path.getsize(c) for c in docs.values())//1048576} MB), versão {versao}")
 
 if __name__ == "__main__":
     main()

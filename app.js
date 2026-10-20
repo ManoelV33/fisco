@@ -196,7 +196,7 @@ function abrirApp(conteudo) {
 function bloquear() {
   C = null; QS = []; QMAP = new Map(); TEMAS = []; CARDS = []; S.session = null; CHAVE = null;
   for (const pr of FIGS.values()) pr.then(u => URL.revokeObjectURL(u)).catch(() => { }); FIGS.clear();
-  document.querySelectorAll(".figov").forEach(x => x.remove()); document.body.classList.remove("sem-rolar");
+  document.querySelectorAll(".figov,.lv").forEach(x => x.remove()); document.body.classList.remove("sem-rolar");
   main.innerHTML = "";
   $("#app").hidden = true; $("#gate").hidden = false;
   setTimeout(() => senha.focus(), 50);
@@ -354,19 +354,40 @@ function vEstudar() {
   const nq = QS.filter(q => q.temaId === o.temaId && !q.reserva).length, nc = CARDS.filter(c => c.temaId === o.temaId).length;
   const nres = o.temaId ? QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t).length : 0;
   const erradas = QS.filter(q => (!o.temaId || q.temaId === o.temaId) && (!o.materia || q.materia === o.materia) && visivel(q) && prog(q).e).length;
-  const opc = [["resumo", "Resumo"], ["questoes", "Questões"], ["cards", "Flashcards"]];
-  const semResumo = o.modo === "resumo" && !(t && t.resumo);
+  if (o.modo === "resumo") o.modo = "teoria";
+  const seg = (lista, rot) => `<div class="stack" style="gap:6px"><span class="lbl">${rot}</span><div class="seg" style="grid-template-columns:repeat(${lista.length},1fr)" role="radiogroup" aria-label="${rot}">${lista.map(([k, n]) => `<button role="radio" aria-checked="${o.modo === k}" data-act="modo" data-v="${k}">${n}</button>`).join("")}</div></div>`;
+  const meu = (C.meus || {})[o.materia || (t && t.materia) || ""];
+  let info = "", botoes = "";
+  if (o.modo === "teoria") {
+    const te = t && t.teoria;
+    if (!o.temaId) info = "Escolha um conteúdo para abrir o PDF.";
+    else if (!te) info = "Este conteúdo ainda não tem o PDF.";
+    else {
+      const ult = leituraDe(te.doc);
+      info = `Conteúdo do PDF, sem as questões · ${te.paginas} páginas${docSalvo(te.doc) ? " · disponível offline" : " · baixa na primeira vez"}`;
+      botoes = `<button class="primary wide" data-act="ler" data-tipo="teoria">Abrir índice</button>${ult > 1 ? `<button class="wide" data-act="ler" data-tipo="teoria" data-pg="${ult}">Continuar de onde parei (pág. ${ult})</button>` : ""}`;
+    }
+  } else if (o.modo === "meu") {
+    if (!o.materia && !t) info = "Escolha a matéria para abrir o seu resumo.";
+    else if (!meu) info = "Você ainda não mandou o resumo desta matéria.";
+    else {
+      const ult = leituraDe(meu.doc);
+      info = `Seu resumo de ${esc(o.materia || t.materia)} · ${meu.paginas} páginas`;
+      botoes = `<button class="primary wide" data-act="ler" data-tipo="meu">Abrir índice</button>${ult > 1 ? `<button class="wide" data-act="ler" data-tipo="meu" data-pg="${ult}">Continuar de onde parei (pág. ${ult})</button>` : ""}`;
+    }
+  } else {
+    info = o.temaId ? `${nq} questões principais${nres ? ` · ${nres} extras` : ""} · ${nc} flashcards` : "";
+    botoes = `<button class="primary wide" data-act="iniciar">${o.modo === "cards" ? "Revisar flashcards" : "Resolver questões"}</button>`
+      + (o.modo === "questoes" && nres ? `<button class="wide" data-act="extras">Fazer as questões extras (${nres})</button>` : "")
+      + (o.modo === "questoes" && erradas ? `<button class="wide" data-act="parecidas-sel">Parecidas com as que errei (${erradas} ${erradas === 1 ? "erro" : "erros"})</button>` : "");
+  }
   return `<header class="stack" style="gap:6px"><span class="eyebrow">O que vamos estudar?</span><h1>Rumo ao Fisco</h1></header>
   <section class="panel">
     <label for="o-materia">Matéria<select id="o-materia"><option value="">Todas as matérias</option>${materias().map(m => `<option ${o.materia === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
-    <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "resumo" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
-    <div class="stack" style="gap:6px"><span class="lbl">O que estudar</span>
-      <div class="seg" role="radiogroup" aria-label="O que estudar">${opc.map(([k, n]) => `<button role="radio" aria-checked="${o.modo === k}" data-act="modo" data-v="${k}">${n}</button>`).join("")}</div></div>
-    ${o.temaId ? `<p class="small muted">${nq} questões principais${nres ? ` · ${nres} extras` : ""} · ${nc} flashcards · ${t && t.resumo ? "resumo disponível" : "resumo ainda não gerado"}</p>` : ""}
-    <button class="primary wide" data-act="iniciar" ${(o.modo === "resumo" && !o.temaId) || semResumo ? "disabled" : ""}>${o.modo === "resumo" ? "Abrir resumo" : o.modo === "cards" ? "Revisar flashcards" : "Resolver questões"}</button>
-    ${o.modo === "resumo" && !o.temaId ? `<p class="small muted">Escolha um conteúdo para abrir o resumo.</p>` : semResumo ? `<p class="small muted">O resumo deste conteúdo entra na próxima atualização.</p>` : ""}
-    ${o.modo === "questoes" && nres ? `<button class="wide" data-act="extras">Fazer as questões extras (${nres})</button>` : ""}
-    ${o.modo === "questoes" && erradas ? `<button class="wide" data-act="parecidas-sel">Parecidas com as que errei (${erradas} ${erradas === 1 ? "erro" : "erros"})</button>` : ""}
+    <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "teoria" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
+    ${seg([["teoria", "Conteúdo do PDF"], ["meu", "Meu resumo"]], "Ler")}
+    ${seg([["questoes", "Questões"], ["cards", "Flashcards"]], "Praticar")}
+    ${info ? `<p class="small muted">${info}</p>` : ""}${botoes}
   </section>`;
 }
 function vResumoTela() {
@@ -462,6 +483,11 @@ document.addEventListener("click", e => {
   else if (a === "rapida") iniciar({ materia: "", modo: "misto", n: 10 });
   else if (a === "reforco") iniciar({ modo: "reforco", n: 15, materia: b.dataset.m || "", temaId: b.dataset.t || "" });
   else if (a === "modo") { S.opts.modo = b.dataset.v; render(); }
+  else if (a === "ler") {
+    const o = S.opts, t = tema(o.temaId);
+    if (b.dataset.tipo === "teoria" && t && t.teoria) abrirLeitor({ ...t.teoria, titulo: t.titulo, sub: t.materia }, +b.dataset.pg || 0);
+    else { const m = o.materia || (t && t.materia), r = (C.meus || {})[m]; if (r) abrirLeitor({ ...r, titulo: "Meu resumo", sub: m, alvo: t && t.titulo }, +b.dataset.pg || 0); }
+  }
   else if (a === "iniciar") {
     const o = S.opts;
     if (o.modo === "resumo") { if (!o.temaId) return; S.view = "resumo"; S.temaId = o.temaId; render(); scrollTo(0, 0); }
@@ -497,6 +523,158 @@ document.addEventListener("click", e => {
   }
   else if (a === "proxima") { s.i++; s.resp = null; render(); scrollTo(0, 0); }
 });
+
+/* ---------------- leitor de PDF (conteúdo e meus resumos) ---------------- */
+const LKEY = "cf.leitura.v1";
+function leituraDe(doc) { try { return (JSON.parse(localStorage.getItem(LKEY) || "{}")[doc]) || 0; } catch (_) { return 0; } }
+function salvarLeitura(doc, p) { try { const v = JSON.parse(localStorage.getItem(LKEY) || "{}"); v[doc] = p; localStorage.setItem(LKEY, JSON.stringify(v)); } catch (_) { } }
+const SALVOS = new Set();
+const docSalvo = id => SALVOS.has(id);
+(async () => { try { const ks = await (await caches.open("fisco-pdfs")).keys(); ks.forEach(r => { const m = r.url.match(/doc\/([0-9a-f]{12})\.bin/); if (m) SALVOS.add(m[1]); }); } catch (_) { } })();
+let PDFJS = null;
+async function carregarPdfjs() {
+  if (PDFJS) return PDFJS;
+  PDFJS = await import("./vendor/pdf.min.mjs");
+  PDFJS.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.mjs";
+  return PDFJS;
+}
+async function baixarDoc(id, aoProgresso) {
+  const r = await fetch(`data/doc/${id}.bin`).catch(() => null);
+  if (!r || !r.ok) throw new Error("offline");
+  const total = +r.headers.get("content-length") || 0;
+  let bytes;
+  if (r.body && total) {
+    const leitor = r.body.getReader(); const partes = []; let n = 0;
+    for (;;) { const { done, value } = await leitor.read(); if (done) break; partes.push(value); n += value.length; aoProgresso && aoProgresso(n / total); }
+    bytes = new Uint8Array(n); let o = 0; for (const p of partes) { bytes.set(p, o); o += p.length; }
+  } else bytes = new Uint8Array(await r.arrayBuffer());
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, CHAVE, bytes.slice(12));
+  SALVOS.add(id);
+  return new Uint8Array(plain);
+}
+const semAcento = s => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+async function abrirLeitor(d, pgInicial) {
+  document.querySelectorAll(".lv").forEach(x => x.remove());
+  const ov = document.createElement("div");
+  ov.className = "lv"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", d.titulo);
+  ov.innerHTML = `<div class="lv-bar"><button class="ghost lv-idx">☰ Índice</button><span class="lv-t"></span><span class="lv-pg">–</span><button class="ghost lv-x" aria-label="Fechar">✕</button></div>
+    <div class="lv-scroll"><div class="lv-pages"></div></div>
+    <div class="lv-base"><button class="lv-ant">‹ Anterior</button><button class="lv-zoom">Zoom 100%</button><button class="lv-prox">Próxima ›</button></div>
+    <div class="lv-ixp" hidden><div class="lv-ixtopo"><button class="ghost lv-ixx">✕ Fechar</button><div><span class="eyebrow">${esc(d.sub || "")}</span><h3>${esc(d.titulo)} · Índice</h3></div></div>
+      <input class="lv-busca" type="search" placeholder="Buscar no conteúdo (ex.: domicílio)" aria-label="Buscar no conteúdo"><div class="lv-lista"></div></div>
+    <div class="lv-load"><p>Abrindo…</p></div>`;
+  document.body.appendChild(ov); document.body.classList.add("sem-rolar");
+  const $o = s => ov.querySelector(s);
+  const scroll = $o(".lv-scroll"), pagesEl = $o(".lv-pages"), ixp = $o(".lv-ixp"), lista = $o(".lv-lista"), busca = $o(".lv-busca"), load = $o(".lv-load");
+  const indice = d.indice || [];
+  let pdf = null, N = d.paginas || 0, zoom = 1, atual = pgInicial || 1, fechado = false;
+  const fechar = () => { fechado = true; ov.remove(); document.body.classList.remove("sem-rolar"); if (pdf) pdf.destroy(); render(); };
+  $o(".lv-x").onclick = fechar;
+  ov.addEventListener("keydown", e => { if (e.key === "Escape") { if (!ixp.hidden) ixp.hidden = true; else fechar(); } });
+  const secao = p => { let s = null; for (const e of indice) { if (e.p <= p) s = e; else break; } return s; };
+  const listaIndice = () => {
+    const cur = secao(atual);
+    lista.innerHTML = indice.length ? indice.map((e, i) => `<button class="lv-ix lv-ix${e.n}${e === cur ? " atual" : ""}" data-p="${e.p}" data-i="${i}"><span>${esc(e.t)}</span><span class="lv-pn">${e.p}</span></button>`).join("")
+      : `<p class="small muted" style="padding:12px">Este PDF não tem títulos reconhecíveis. Use a busca acima.</p>`;
+  };
+  const abrirIndice = () => {
+    listaIndice(); ixp.hidden = false;
+    const alvo = lista.querySelector(".atual"); if (alvo) alvo.scrollIntoView({ block: "center" });
+  };
+  $o(".lv-idx").onclick = abrirIndice; $o(".lv-ixx").onclick = () => { ixp.hidden = true; };
+  lista.addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; ixp.hidden = true; irPara(+b.dataset.p); });
+  // tela cheia ao tocar
+  let toque = null;
+  scroll.addEventListener("pointerdown", e => { toque = { x: e.clientX, y: e.clientY, t: Date.now() }; });
+  scroll.addEventListener("pointerup", e => { if (toque && Math.abs(e.clientX - toque.x) < 8 && Math.abs(e.clientY - toque.y) < 8 && Date.now() - toque.t < 350) ov.classList.toggle("cheia"); toque = null; });
+  // carrega
+  try {
+    await carregarPdfjs();
+    const bytes = await baixarDoc(d.doc, f => { load.innerHTML = `<p>Baixando… ${Math.round(f * 100)}%</p>`; });
+    if (fechado) return;
+    pdf = await PDFJS.getDocument({ data: bytes, isEvalSupported: false }).promise;
+    N = pdf.numPages;
+  } catch (err) {
+    load.innerHTML = `<p>${err && err.message === "offline" ? "Sem internet. Abra este conteúdo uma vez com internet para ele ficar salvo no aparelho." : "Não foi possível abrir o PDF."}</p><button class="lv-x2">Fechar</button>`;
+    load.querySelector(".lv-x2").onclick = fechar; return;
+  }
+  load.remove();
+  const p1 = await pdf.getPage(1); const v1 = p1.getViewport({ scale: 1 });
+  const proporcao = v1.height / v1.width;
+  pagesEl.innerHTML = Array.from({ length: N }, (_, i) => `<div class="lv-p" data-n="${i + 1}" style="aspect-ratio:1/${proporcao.toFixed(4)}"></div>`).join("");
+  const divs = [...pagesEl.children];
+  const feitas = new Map();  // n -> canvas
+  const renderizar = async n => {
+    if (feitas.has(n) || fechado) return;
+    feitas.set(n, null);
+    const page = await pdf.getPage(n); const vp0 = page.getViewport({ scale: 1 });
+    const div = divs[n - 1]; div.style.aspectRatio = `1/${(vp0.height / vp0.width).toFixed(4)}`;
+    const larg = div.clientWidth; const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const vp = page.getViewport({ scale: larg / vp0.width * dpr });
+    const cv = document.createElement("canvas"); cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
+    await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise.catch(() => { });
+    if (fechado || !feitas.has(n)) return;
+    div.innerHTML = ""; div.appendChild(cv); feitas.set(n, cv);
+    if (feitas.size > 16) {  // libera memória das páginas distantes
+      for (const [k] of [...feitas].sort((a, b) => Math.abs(b[0] - atual) - Math.abs(a[0] - atual)).slice(0, feitas.size - 16)) { if (Math.abs(k - atual) > 4) { divs[k - 1].innerHTML = ""; feitas.delete(k); } }
+    }
+  };
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) renderizar(+e.target.dataset.n); }), { root: scroll, rootMargin: "900px 0px" });
+  divs.forEach(dv => io.observe(dv));
+  const atualizar = () => {
+    const meio = scroll.scrollTop + scroll.clientHeight * 0.35;
+    let n = 1; for (const dv of divs) { if (dv.offsetTop <= meio) n = +dv.dataset.n; else break; }
+    atual = n;
+    $o(".lv-pg").textContent = `${n} / ${N}`;
+    const s = secao(n); $o(".lv-t").textContent = s ? s.t : d.titulo;
+    salvarLeitura(d.doc, n);
+  };
+  let rq = 0; scroll.addEventListener("scroll", () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; atualizar(); }); }, { passive: true });
+  const irPara = n => { n = Math.max(1, Math.min(N, n)); const dv = divs[n - 1]; if (dv) scroll.scrollTop = dv.offsetTop - 6; renderizar(n); atualizar(); };
+  $o(".lv-ant").onclick = () => irPara(atual - 1);
+  $o(".lv-prox").onclick = () => irPara(atual + 1);
+  $o(".lv-zoom").onclick = () => {
+    zoom = zoom === 1 ? 1.5 : zoom === 1.5 ? 2 : 1;
+    $o(".lv-zoom").textContent = `Zoom ${zoom * 100}%`;
+    const n = atual; pagesEl.style.width = `${zoom * 100}%`;
+    for (const [k] of feitas) divs[k - 1].innerHTML = ""; feitas.clear();
+    requestAnimationFrame(() => irPara(n));
+  };
+  // busca no texto
+  const textos = [];
+  let buscaId = 0;
+  busca.addEventListener("input", () => {
+    const termo = semAcento(busca.value.trim()); const id = ++buscaId;
+    if (termo.length < 3) { listaIndice(); return; }
+    setTimeout(async () => {
+      if (id !== buscaId) return;
+      const res = [];
+      for (let n = 1; n <= N && res.length < 40; n++) {
+        if (id !== buscaId) return;
+        if (textos[n] == null) { const tc = await (await pdf.getPage(n)).getTextContent(); textos[n] = tc.items.map(i => i.str).join(" ").replace(/\s+/g, " "); }
+        const t = textos[n], ts = semAcento(t); let k = ts.indexOf(termo);
+        while (k >= 0 && res.length < 40) { res.push({ n, s: t.slice(Math.max(0, k - 50), k + termo.length + 60) }); k = ts.indexOf(termo, k + termo.length + 80); }
+        if (n % 10 === 0) lista.innerHTML = `<p class="small muted" style="padding:12px">Buscando… página ${n} de ${N}</p>`;
+      }
+      if (id !== buscaId) return;
+      lista.innerHTML = res.length ? res.map(r => `<button class="lv-ix lv-ix2" data-p="${r.n}"><span>…${esc(r.s)}…</span><span class="lv-pn">${r.n}</span></button>`).join("") : `<p class="small muted" style="padding:12px">Nada encontrado.</p>`;
+    }, 350);
+  });
+  // posição inicial
+  if (pgInicial) irPara(pgInicial);
+  else {
+    atualizar();
+    if (d.alvo && indice.length) {  // meu resumo: destaca o assunto escolhido
+      const pal = semAcento(d.alvo).split(/\W+/).filter(w => w.length > 3);
+      let melhor = null, mv = 0;
+      indice.forEach(e => { const t = semAcento(e.t); const v = pal.filter(w => t.includes(w)).length; if (v > mv) { mv = v; melhor = e; } });
+      if (melhor) { atual = melhor.p; }
+    }
+    abrirIndice();
+    if (d.alvo) atual = 1;
+  }
+}
 
 /* service worker (offline) + aviso de atualização */
 if ("serviceWorker" in navigator && location.protocol === "https:") {
