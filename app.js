@@ -346,7 +346,7 @@ function vTema() {
       ${qs.length ? `<button class="primary" data-act="sess-tema" data-modo="questoes">Resolver as questões deste tema</button>` : ""}
       ${qs.some(q => q.e) ? `<button data-act="parecidas-tema">Parecidas com as que errei neste tema</button>` : ""}
       ${nres ? `<button data-act="extras-tema">Fazer questões extras (${nres})</button>` : ""}
-      <p class="small muted">Questões do seu PDF, com gabarito e comentário do professor. As 12 principais priorizam cargos fiscais, provas recentes e os assuntos que mais se repetem no PDF.</p>
+      <p class="small muted">Questões do seu PDF, com gabarito e comentário do professor. As 15 principais priorizam cargos fiscais, provas recentes e os assuntos que mais se repetem no PDF.</p>
     </section>
     <section class="panel" style="padding-block:6px">${qs.map(q => `<details><summary><span class="s clamp">${esc(q.enunciado.replace(/```/g, ""))}</span>${st(q)}</summary><div class="stack small" style="margin-top:8px;gap:6px">${q.tipo === "me" ? `<div>${q.alternativas.map((a, i) => `<div><strong>${L[i]})</strong> ${fmt(a)}</div>`).join("")}</div>` : ""}<div><strong>Gabarito: ${q.tipo === "ce" ? (q.gabarito === "C" ? "Certo" : "Errado") : q.gabarito}</strong>${q.fonteProva ? " · " + esc(q.fonteProva) : ""}</div><div style="white-space:pre-wrap">${fmt(q.comentario)}</div></div></details>`).join("")}</section>`;
   } else if (S.tab === "resumo") {
@@ -381,7 +381,7 @@ document.addEventListener("click", e => {
   else if (a === "rapida") iniciar({ materia: "", modo: "misto", n: 10 });
   else if (a === "iniciar") iniciar(Object.assign({}, S.opts));
   else if (a === "sess-tema") iniciar({ materia: "", modo: b.dataset.modo, n: 40, temaId: S.temaId });
-  else if (a === "extras-tema") iniciar({ modo: "extras", n: 24, temaId: S.temaId });
+  else if (a === "extras-tema") iniciar({ modo: "extras", n: 30, temaId: S.temaId });
   else if (a === "parecidas-home") iniciar({ modo: "parecidas", n: 10 });
   else if (a === "parecidas-tema") iniciar({ modo: "parecidas", n: 10, temaId: S.temaId });
   else if (a === "parecidas-de") iniciar({ modo: "parecidas", n: 10, base: b.dataset.id });

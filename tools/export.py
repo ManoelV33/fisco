@@ -6,8 +6,8 @@ import parse
 
 OUT = "/home/claude/out"
 os.makedirs(OUT, exist_ok=True)
-ATIVAS = 12
-RESERVA = 24
+ATIVAS = 15
+RESERVA = 30
 
 MATERIA = {
     "PDFs Estratégia Contabilidade": "Contabilidade Geral e Avançada",
