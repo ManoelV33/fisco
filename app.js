@@ -355,7 +355,7 @@ function vEstudar() {
   const erradas = QS.filter(q => (!o.temaId || q.temaId === o.temaId) && (!o.materia || q.materia === o.materia) && visivel(q) && prog(q).e).length;
   const opc = [["resumo", "Resumo"], ["questoes", "Questões"], ["cards", "Flashcards"]];
   const semResumo = o.modo === "resumo" && !(t && t.resumo);
-  return `<header class="stack" style="gap:6px"><span class="eyebrow">O que vamos estudar?</span><h1>Estudar</h1></header>
+  return `<header class="stack" style="gap:6px"><span class="eyebrow">O que vamos estudar?</span><h1>Rumo ao Fisco</h1></header>
   <section class="panel">
     <label for="o-materia">Matéria<select id="o-materia"><option value="">Todas as matérias</option>${materias().map(m => `<option ${o.materia === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
     <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "resumo" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
@@ -371,7 +371,7 @@ function vEstudar() {
 function vResumoTela() {
   const t = tema(S.temaId); if (!t) { S.view = "estudar"; return vEstudar(); }
   const r = t.resumo && t.resumo.v === 2 ? limparResumo(t.resumo) : null;
-  return `<header class="stack" style="gap:8px"><button class="ghost" data-act="voltar" style="align-self:flex-start;padding-left:0">← Estudar</button><span class="eyebrow">${esc(t.materia)}</span><h1>${esc(t.titulo)}</h1></header>
+  return `<header class="stack" style="gap:8px"><button class="ghost" data-act="voltar" style="align-self:flex-start;padding-left:0">← Rumo ao Fisco</button><span class="eyebrow">${esc(t.materia)}</span><h1>${esc(t.titulo)}</h1></header>
   ${r ? `<section class="panel">${htmlResumoV2(r, fmt, esc)}</section>` : `<section class="panel empty"><p>O resumo deste conteúdo entra na próxima atualização.</p></section>`}
   <div class="stack" style="gap:8px"><button class="primary wide" data-act="ir-questoes">Resolver as questões deste conteúdo</button>${CARDS.some(c => c.temaId === t.id) ? `<button class="wide" data-act="ir-cards">Revisar os flashcards</button>` : ""}</div>`;
 }
@@ -386,7 +386,7 @@ function vSessao() {
     <section class="panel"><div class="today"><div><b>${s.acertos}/${s.feitas}</b><span class="small muted">questões certas</span></div><div><b>${s.cardsFeitos}</b><span class="small muted">cards revisados</span></div><div><b>${tot}</b><span class="small muted">itens</span></div></div>
     ${(() => { const o = s.origem; const nres = o.temaId ? QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t).length : 0; return o.modo === "questoes" && nres ? `<button class="wide" data-act="extras-de" data-id="${esc(o.temaId)}">Fazer as questões extras (${nres})</button>` : ""; })()}
     ${s.feitas > s.acertos ? `<button class="wide" data-act="parecidas-sessao">Parecidas com as que errei nesta sessão</button>` : ""}
-    <div class="row"><button class="primary" data-act="denovo">Repetir</button><button data-act="sair">${s.origem.modo === "reforco" ? "Voltar" : "Voltar ao Estudar"}</button></div></section>`;
+    <div class="row"><button class="primary" data-act="denovo">Repetir</button><button data-act="sair">${s.origem.modo === "reforco" ? "Voltar" : "Voltar ao início"}</button></div></section>`;
   }
   const cur = itemAtual(); if (!cur || !cur.x) { s.i++; return vSessao(); }
   const t = tema(cur.x.temaId) || {};
