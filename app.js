@@ -9,7 +9,8 @@
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const fmtInline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/==(.+?)==/g, '<mark class="mk">$1</mark>');
+const fmtInline = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/==(.+?)==/g, '<mark class="mk">$1</mark>')
+  .replace(/\((CERTO|ERRADO)(:[^)]*)?\)/g, (m, g, r) => `(<strong class="gab gab-${g === "CERTO" ? "c" : "e"}">${g}</strong>${r || ""})`).replace(/\n/g, "<br>");
 const fmt = s => String(s ?? "").split(/```\n?/).map((p, i) => i % 2 ? `<pre class="tbl">${esc(p.replace(/\n$/, ""))}</pre>` : fmtInline(p)).join("");
 const fmtDoc = s => String(s ?? "").split(/```\n?/).map((p, i) => i % 2 ? `<pre class="tbl">${esc(p.replace(/\n$/, ""))}</pre>` : fmtInline(p).replace(/^## (.+)$/gm, '<span class="res-h">$1</span>')).join("");
 const L = ["A", "B", "C", "D", "E"];
