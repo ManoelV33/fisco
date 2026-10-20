@@ -462,7 +462,14 @@ document.addEventListener("click", e => {
 /* service worker (offline) + aviso de atualização */
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   navigator.serviceWorker.register("sw.js").then(reg => {
-    reg.addEventListener("updatefound", () => { const w = reg.installing; w && w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) { encBytes = null; S.msg = "Conteúdo novo disponível: bloqueie e abra de novo para carregar."; render(); } }); });
+    reg.update().catch(() => { });
   }).catch(() => { });
+  // versão nova instalada: recarrega sozinho (ou avisa se estiver no meio de uma sessão)
+  let recarregou = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (recarregou) return;
+    if (!S.session) { recarregou = true; location.reload(); }
+    else { S.msg = "Versão nova do Fisco disponível: ao terminar esta sessão, feche e abra o app (ou atualize a página)."; render(); }
+  });
 }
 })();
