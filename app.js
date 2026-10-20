@@ -170,9 +170,7 @@ form.addEventListener("submit", async e => {
   okBtn.disabled = true; msg.className = "gate-msg"; msg.textContent = "";
   try {
     const conteudo = await decifrar(v);
-    msg.className = "gate-msg ok"; msg.textContent = "Acertô, mizerávi!";
     senha.blur();
-    await new Promise(r => setTimeout(r, 1300));
     senha.value = ""; msg.textContent = ""; okBtn.disabled = false;
     abrirApp(conteudo);
   } catch (err) {
