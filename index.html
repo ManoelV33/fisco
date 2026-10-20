@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b2a1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fisco">
+<title>Fisco</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<section class="gate" id="gate" aria-label="Rumo ao Fisco">
+  <form class="gate-box" id="gate-form" autocomplete="off">
+    <svg class="gate-f" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="prata" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset=".38" stop-color="#c4cbd4"/><stop offset=".52" stop-color="#969eaa"/><stop offset=".62" stop-color="#dee3ea"/><stop offset="1" stop-color="#848c98"/></linearGradient></defs><polygon points="27,17 79,17 73,33 45,33 45,43 69,43 63,58 45,58 45,83 27,83" fill="url(#prata)"/></svg>
+    <h1 class="gate-title">Rumo ao Fisco</h1>
+    <label class="gate-label" for="gate-senha">Senha</label>
+    <input class="gate-input" id="gate-senha" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" required>
+    <button class="gate-btn" type="submit" id="gate-ok">Entrar</button>
+    <p class="gate-msg" id="gate-msg" role="status" aria-live="polite"></p>
+  </form>
+</section>
+
+<div class="app" id="app" hidden>
+  <button class="lock" data-act="bloquear" id="btn-lock">Bloquear</button>
+  <div class="wrap" id="main" aria-live="polite"></div>
+  <nav class="bottom" aria-label="Seções">
+    <div class="in">
+      <button data-act="nav" data-v="inicio" id="nav-inicio"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg>Hoje</button>
+      <button data-act="nav" data-v="estudar" id="nav-estudar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M9 12l2 2 4-4"/></svg>Estudar</button>
+      <button data-act="nav" data-v="conteudo" id="nav-conteudo"><svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>Temas</button>
+    </div>
+  </nav>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
