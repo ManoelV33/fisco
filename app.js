@@ -150,7 +150,7 @@ form.addEventListener("submit", async e => {
 baixarConteudo().catch(() => { });
 
 /* ---------------- app ---------------- */
-const S = { view: "estudar", temaId: null, tab: "questoes", session: null, opts: { materia: "", temaId: "", modo: "questoes", nivel: 0 } };
+const S = { view: "estudar", temaId: null, tab: "questoes", session: null, opts: { materia: "", temaId: "", modo: "questoes" } };
 const main = $("#main");
 function abrirApp(conteudo) {
   C = conteudo; montarIndices();
@@ -198,7 +198,7 @@ function montarSessao(o) {
   const filtro = x => (!o.temaId || x.temaId === o.temaId) && (!o.materia || (x.materia || (tema(x.temaId) || {}).materia) === o.materia);
   const n = o.n || 10;
   if (o.modo === "extras") {
-    const qs = QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t && !prog(q).anulada && (!o.nivel || q.nivel === o.nivel)).sort((a, b) => (a.nivel || 2) - (b.nivel || 2) || (b.prioridade || 0) - (a.prioridade || 0)).slice(0, n);
+    const qs = QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t && !prog(q).anulada).sort((a, b) => (b.prioridade || 0) - (a.prioridade || 0)).slice(0, n);
     return sessao(qs.map(q => ({ k: "q", id: q.id })), o);
   }
   if (o.modo === "reforco") {
@@ -234,7 +234,7 @@ function montarSessao(o) {
   let qitens = [];
   if (o.modo !== "cards") {
     const peso = q => prog(q).e ? 0 : !prog(q).t ? 1 : 2;
-    qitens = QS.filter(q => visivel(q) && filtro(q) && !prog(q).anulada && (!o.nivel || q.nivel === o.nivel)).sort((a, b) => peso(a) - peso(b) || (a.nivel || 2) - (b.nivel || 2) || (prog(a).u || 0) - (prog(b).u || 0)).map(q => ({ k: "q", id: q.id }));
+    qitens = QS.filter(q => visivel(q) && filtro(q) && !prog(q).anulada).sort((a, b) => peso(a) - peso(b) || (b.prioridade || 0) - (a.prioridade || 0) || (prog(a).u || 0) - (prog(b).u || 0)).map(q => ({ k: "q", id: q.id }));
   }
   let itens;
   if (o.modo === "misto") {
@@ -324,7 +324,6 @@ function vEstudar() {
     <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "resumo" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
     <div class="stack" style="gap:6px"><span class="lbl">O que estudar</span>
       <div class="seg" role="radiogroup" aria-label="O que estudar">${opc.map(([k, n]) => `<button role="radio" aria-checked="${o.modo === k}" data-act="modo" data-v="${k}">${n}</button>`).join("")}</div></div>
-    ${o.modo === "questoes" ? `<label for="o-nivel">Nível<select id="o-nivel"><option value="0">Todos (do básico ao avançado)</option>${[1, 2, 3].map(n => `<option value="${n}" ${o.nivel == n ? "selected" : ""}>${NIVEL[n]}${n === 3 ? " (nível fiscal)" : ""}</option>`).join("")}</select></label>` : ""}
     ${o.temaId ? `<p class="small muted">${nq} questões principais${nres ? ` · ${nres} extras` : ""} · ${nc} flashcards · ${t && t.resumo ? "resumo disponível" : "resumo ainda não gerado"}</p>` : ""}
     <button class="primary wide" data-act="iniciar" ${(o.modo === "resumo" && !o.temaId) || semResumo ? "disabled" : ""}>${o.modo === "resumo" ? "Abrir resumo" : o.modo === "cards" ? "Revisar flashcards" : "Resolver questões"}</button>
     ${o.modo === "resumo" && !o.temaId ? `<p class="small muted">Escolha um conteúdo para abrir o resumo.</p>` : semResumo ? `<p class="small muted">O resumo deste conteúdo entra na próxima atualização.</p>` : ""}
@@ -390,7 +389,7 @@ function vTema() {
       ${qs.length ? `<button class="primary" data-act="sess-tema" data-modo="questoes">Resolver as questões deste tema</button>` : ""}
       ${qs.some(q => q.e) ? `<button data-act="parecidas-tema">Parecidas com as que errei neste tema</button>` : ""}
       ${nres ? `<button data-act="extras-tema">Fazer questões extras (${nres})</button>` : ""}
-      <p class="small muted">Questões do seu PDF, com gabarito e comentário do professor. As principais priorizam provas da área fiscal e de nível parecido, mais recentes, e os assuntos que mais se repetem no PDF.</p>
+      <p class="small muted">Questões do seu PDF, com gabarito e comentário do professor. As principais priorizam provas da área fiscal e de nível parecido, mais recentes, e os assuntos que mais se repetem no PDF, misturando os níveis na proporção de uma prova fiscal (cerca de 20% básicas, 50% intermediárias e 30% avançadas).</p>
     </section>
     <section class="panel" style="padding-block:6px">${qs.map(q => `<details><summary><span class="s clamp">${esc(q.enunciado.replace(/```/g, ""))}</span>${st(q)}</summary><div class="stack small" style="margin-top:8px;gap:6px">${q.tipo === "me" ? `<div>${q.alternativas.map((a, i) => `<div><strong>${L[i]})</strong> ${fmt(a)}</div>`).join("")}</div>` : ""}<div><strong>Gabarito: ${q.tipo === "ce" ? (q.gabarito === "C" ? "Certo" : "Errado") : q.gabarito}</strong>${q.fonteProva ? " · " + esc(q.fonteProva) : ""}</div><div style="white-space:pre-wrap">${fmt(q.comentario)}</div></div></details>`).join("")}</section>`;
   } else if (S.tab === "resumo") {
@@ -412,7 +411,6 @@ function vTema() {
 document.addEventListener("change", e => {
   if (e.target.id === "o-materia") { S.opts.materia = e.target.value; S.opts.temaId = ""; render(); }
   if (e.target.id === "o-tema") { S.opts.temaId = e.target.value; render(); }
-  if (e.target.id === "o-nivel") { S.opts.nivel = +e.target.value; render(); }
 });
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-act]"); if (!b || b.disabled || !C) return;
@@ -428,12 +426,12 @@ document.addEventListener("click", e => {
   else if (a === "iniciar") {
     const o = S.opts;
     if (o.modo === "resumo") { if (!o.temaId) return; S.view = "resumo"; S.temaId = o.temaId; render(); scrollTo(0, 0); }
-    else iniciar({ modo: o.modo, materia: o.materia, temaId: o.temaId, nivel: o.modo === "questoes" ? o.nivel : 0, n: o.modo === "cards" ? 500 : (o.temaId ? 60 : 20) });
+    else iniciar({ modo: o.modo, materia: o.materia, temaId: o.temaId, n: o.modo === "cards" ? 500 : (o.temaId ? 60 : 20) });
   }
   else if (a === "voltar") { S.view = "estudar"; S.session = null; render(); scrollTo(0, 0); }
   else if (a === "ir-questoes") iniciar({ modo: "questoes", temaId: S.temaId, n: 60 });
   else if (a === "ir-cards") iniciar({ modo: "cards", temaId: S.temaId, n: 500 });
-  else if (a === "extras") iniciar({ modo: "extras", n: 30, temaId: S.opts.temaId, nivel: S.opts.nivel });
+  else if (a === "extras") iniciar({ modo: "extras", n: 30, temaId: S.opts.temaId });
   else if (a === "extras-de") iniciar({ modo: "extras", n: 30, temaId: b.dataset.id });
   else if (a === "parecidas-sel") iniciar({ modo: "parecidas", n: 15, materia: S.opts.materia, temaId: S.opts.temaId });
   else if (a === "parecidas-sessao") { const ids = s.itens.filter(it => it.k === "q" && prog(QMAP.get(it.id) || {}).e).map(it => it.id); S.session = null; if (ids.length) iniciar({ modo: "parecidas", n: 15, base: ids[0], bases: ids }); }

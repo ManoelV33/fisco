@@ -184,17 +184,33 @@ def build(subdir, fname):
     sel = []
     tipos = {"ce": 0, "me": 0}
     cand = list(range(n))
-    while len(sel) < min(n_ativ, n):
+    nv = [nivel(q) for q in qs]
+    # proporção de dificuldade de uma prova fiscal: ~20% básico, 50% intermediário, 30% avançado
+    alvo = min(n_ativ, n)
+    disp = {k: nv.count(k) for k in (1, 2, 3)}
+    cota = {1: round(alvo * .2), 3: round(alvo * .3)}
+    cota[2] = alvo - cota[1] - cota[3]
+    for _ in range(3):  # redistribui o que faltar num nível para os vizinhos
+        for k in (1, 2, 3):
+            falta = cota[k] - disp[k]
+            if falta > 0:
+                cota[k] = disp[k]
+                for viz in ((2,) if k != 2 else (3, 1)):
+                    cota[viz] += falta; break
+    usados = {1: 0, 2: 0, 3: 0}
+    while len(sel) < alvo:
         best, bv = None, -1e9
         for i in cand:
             if i in sel: continue
+            if usados[nv[i]] >= cota[nv[i]] and any(usados[k] < cota[k] and any(nv[j] == k and j not in sel for j in cand) for k in (1, 2, 3)):
+                continue
             if tipos[qs[i]["tipo"]] >= limite_tipo and sum(1 for j in cand if j not in sel and qs[j]["tipo"] != qs[i]["tipo"]) > 0:
                 continue
             red = max((S[i][j] for j in sel), default=0)
             v = sc[i] - 3.0 * red
             if v > bv: bv, best = v, i
         if best is None: break
-        sel.append(best); tipos[qs[best]["tipo"]] += 1
+        sel.append(best); tipos[qs[best]["tipo"]] += 1; usados[nv[best]] += 1
     rest = sorted([i for i in range(n) if i not in sel], key=lambda i: -sc[i])
     reserva = rest[:n_res]
     keep = sel + reserva
