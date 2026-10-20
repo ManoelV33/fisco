@@ -354,7 +354,7 @@ function vEstudar() {
   const nq = QS.filter(q => q.temaId === o.temaId && !q.reserva).length, nc = CARDS.filter(c => c.temaId === o.temaId).length;
   const nres = o.temaId ? QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t).length : 0;
   const erradas = QS.filter(q => (!o.temaId || q.temaId === o.temaId) && (!o.materia || q.materia === o.materia) && visivel(q) && prog(q).e).length;
-  if (o.modo === "resumo") o.modo = "teoria";
+  if (o.modo === "meu") o.modo = "resumo";
   const seg = (lista, rot) => `<div class="stack" style="gap:6px"><span class="lbl">${rot}</span><div class="seg" style="grid-template-columns:repeat(${lista.length},1fr)" role="radiogroup" aria-label="${rot}">${lista.map(([k, n]) => `<button role="radio" aria-checked="${o.modo === k}" data-act="modo" data-v="${k}">${n}</button>`).join("")}</div></div>`;
   const meu = (C.meus || {})[o.materia || (t && t.materia) || ""];
   let info = "", botoes = "";
@@ -367,6 +367,10 @@ function vEstudar() {
       info = `Conteúdo do PDF, sem as questões · ${te.paginas} páginas${docSalvo(te.doc) ? " · disponível offline" : " · baixa na primeira vez"}`;
       botoes = `<button class="primary wide" data-act="ler" data-tipo="teoria">Abrir índice</button>${ult > 1 ? `<button class="wide" data-act="ler" data-tipo="teoria" data-pg="${ult}">Continuar de onde parei (pág. ${ult})</button>` : ""}`;
     }
+  } else if (o.modo === "resumo") {
+    if (!o.temaId) info = "Escolha um conteúdo para abrir o resumo.";
+    else if (!(t && t.resumo)) info = "O resumo deste conteúdo entra na próxima atualização.";
+    else botoes = `<button class="primary wide" data-act="iniciar">Abrir resumo</button>`;
   } else if (o.modo === "meu") {
     if (!o.materia && !t) info = "Escolha a matéria para abrir o seu resumo.";
     else if (!meu) info = "Você ainda não mandou o resumo desta matéria.";
@@ -384,8 +388,8 @@ function vEstudar() {
   return `<header class="stack" style="gap:6px"><span class="eyebrow">O que vamos estudar?</span><h1>Rumo ao Fisco</h1></header>
   <section class="panel">
     <label for="o-materia">Matéria<select id="o-materia"><option value="">Todas as matérias</option>${materias().map(m => `<option ${o.materia === m ? "selected" : ""}>${esc(m)}</option>`).join("")}</select></label>
-    <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "teoria" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
-    ${seg([["teoria", "Conteúdo do PDF"], ["meu", "Meu resumo"]], "Ler")}
+    <label for="o-tema">Conteúdo<select id="o-tema"><option value="">${o.modo === "teoria" || o.modo === "resumo" ? "Escolha um conteúdo" : "Todos os conteúdos"}</option>${ts.map(x => `<option value="${esc(x.id)}" ${o.temaId === x.id ? "selected" : ""}>${o.materia ? "" : esc(x.materia) + " · "}${esc(x.titulo)}</option>`).join("")}</select></label>
+    ${seg([["resumo", "Resumo"], ["teoria", "Conteúdo do PDF"]], "Ler")}
     ${seg([["questoes", "Questões"], ["cards", "Flashcards"]], "Praticar")}
     ${info ? `<p class="small muted">${info}</p>` : ""}${botoes}
   </section>`;
