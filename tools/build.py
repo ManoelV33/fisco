@@ -26,7 +26,7 @@ def main():
     temas, questoes = [], []
     for f in sorted(glob.glob(os.path.join(a.pacotes, "tema-*.json"))):
         t = json.load(open(f))
-        temas.append({k: t[k] for k in ("id", "materia", "titulo") if k in t} | ({"resumoTexto": t["resumoTexto"]} if t.get("resumoTexto") else {}))
+        temas.append({k: t[k] for k in ("id", "materia", "titulo") if k in t})
     for f in sorted(glob.glob(os.path.join(a.pacotes, "pacote-*.json"))):
         p = json.load(open(f))
         for q in p["questoes"]:
