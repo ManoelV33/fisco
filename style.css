@@ -215,3 +215,4 @@ mark.mk{background:linear-gradient(transparent 12%,var(--marker) 12%,var(--marke
 .figov.real .figov-in img{max-width:none;max-height:none;width:230%}
 body.sem-rolar{overflow:hidden}
 .gab-c{color:#11663f}.gab-e{color:#b42318}
+.rz-aviso{font-size:.8rem;line-height:1.45;color:var(--ink-2);background:var(--wash);border-left:3px solid var(--accent);border-radius:8px;padding:8px 10px;margin:0 0 12px}

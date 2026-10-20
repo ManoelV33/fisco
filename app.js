@@ -80,6 +80,7 @@ function htmlResumoV2(r, fmt, esc) {
     return `<div class="rz-box rz-${b.tipo}"><span class="rz-tag">${icone[b.tipo]}</span><p>${fmt(b.texto)}</p></div>`;
   };
   return `<article class="rz">
+    <p class="rz-aviso"><strong>Questões citadas:</strong> o padrão é (BANCA) "enunciado" (GABARITO). Onde ainda aparecer "BANCA: regra (ERRADO)", o gabarito é do <strong>item da prova</strong>, que afirmava o contrário da regra escrita ali.</p>
     ${r.visaoGeral ? `<p class="rz-vg">${fmt(r.visaoGeral)}</p>` : ""}
     ${r.secoes.map((s, i) => `<section class="rz-sec"><h3 class="rz-h"><span class="rz-n">${String(i + 1).padStart(2, "0")}</span>${fmt(s.titulo)}</h3>${s.blocos.map(bloco).join("")}</section>`).join("")}
     ${r.autoteste.length ? `<section class="rz-sec rz-auto"><h3 class="rz-h">Teste-se</h3><p class="rz-p small">Tente responder antes de abrir.</p>${r.autoteste.map(q => `<details class="rz-q"><summary>${fmt(q.p)}</summary><p>${fmt(q.r)}</p></details>`).join("")}</section>` : ""}
