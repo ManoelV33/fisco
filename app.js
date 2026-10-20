@@ -149,12 +149,12 @@ form.addEventListener("submit", async e => {
 baixarConteudo().catch(() => { });
 
 /* ---------------- app ---------------- */
-const S = { view: "inicio", temaId: null, tab: "questoes", session: null, opts: { materia: "", temaId: "", modo: "questoes" } };
+const S = { view: "estudar", temaId: null, tab: "questoes", session: null, opts: { materia: "", temaId: "", modo: "questoes" } };
 const main = $("#main");
 function abrirApp(conteudo) {
   C = conteudo; montarIndices();
   $("#gate").hidden = true; $("#app").hidden = false;
-  S.view = "inicio"; S.session = null;
+  S.view = "estudar"; S.session = null;
   render(); scrollTo(0, 0);
 }
 function bloquear() {
@@ -200,6 +200,20 @@ function montarSessao(o) {
     const qs = QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t && !prog(q).anulada).sort((a, b) => (b.prioridade || 0) - (a.prioridade || 0)).slice(0, n);
     return sessao(qs.map(q => ({ k: "q", id: q.id })), o);
   }
+  if (o.modo === "reforco") {
+    const alvo = q => (!o.temaId || q.temaId === o.temaId) && (!o.materia || q.materia === o.materia);
+    const erradas = QS.filter(q => alvo(q) && visivel(q) && prog(q).e && !prog(q).anulada).sort((a, b) => (prog(b).u || 0) - (prog(a).u || 0));
+    const vistos = new Set(erradas.map(q => q.id)), out = [];
+    const pend = x => !prog(x).anulada && !prog(x).t;
+    const filas = erradas.map(q => simsOf(q).filter(pend));
+    let k = 0;
+    while (out.length < n && filas.some(f => f.length)) { const f = filas[k++ % filas.length]; while (f.length) { const x = f.shift(); if (!vistos.has(x.id)) { vistos.add(x.id); out.push({ k: "q", id: x.id }); break; } } }
+    const temasErro = new Set(erradas.map(q => q.temaId));
+    const resto = QS.filter(q => alvo(q) && pend(q) && !vistos.has(q.id)).sort((a, b) => (temasErro.has(b.temaId) - temasErro.has(a.temaId)) || ((a.reserva ? 1 : 0) - (b.reserva ? 1 : 0)) || (b.prioridade || 0) - (a.prioridade || 0));
+    for (const q of resto) { if (out.length >= n) break; out.push({ k: "q", id: q.id }); }
+    if (out.length < n) for (const q of erradas) { if (out.length >= n) break; out.push({ k: "q", id: q.id }); }
+    return sessao(out, o);
+  }
   if (o.modo === "parecidas") {
     const bases = o.bases ? o.bases.map(id => QMAP.get(id)).filter(Boolean) : o.base ? [QMAP.get(o.base)].filter(Boolean) : QS.filter(q => visivel(q) && prog(q).e && filtro(q)).sort((a, b) => (prog(b).u || 0) - (prog(a).u || 0));
     const vistos = new Set(bases.map(b => b.id)), out = [];
@@ -238,7 +252,7 @@ function render() {
   if (!C) return;
   document.querySelectorAll("nav.bottom button").forEach(b => b.setAttribute("aria-current", b.dataset.v === (S.view === "resumo" ? "estudar" : S.view) ? "page" : "false"));
   let h = "";
-  if (S.view === "inicio") h = vInicio();
+  if (S.view === "desempenho") h = vDesempenho();
   else if (S.view === "estudar") h = S.session ? vSessao() : vEstudar();
   else if (S.view === "resumo") h = vResumoTela();
   main.innerHTML = (S.msg ? `<div class="notice info row between" role="status"><span>${esc(S.msg)}</span><button class="ghost" data-act="msgx">Fechar</button></div>` : "") + h;
@@ -248,29 +262,40 @@ function stats() {
   return { venc: cs.filter(c => c.reps > 0 && vencido(c)).length, novosC: cs.filter(c => !c.reps).length, novasQ: qs.filter(q => !prog(q).t).length, erradas: qs.filter(q => prog(q).e).length };
 }
 const materias = () => [...new Set(TEMAS.map(t => t.materia))].sort(ordem);
-function vInicio() {
-  const st = stats();
-  const dia = new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
-  const porM = {};
-  QS.forEach(q => { const p = prog(q); if (!p.t || p.anulada) return; const m = q.materia || "Outras"; porM[m] = porM[m] || { t: 0, a: 0 }; porM[m].t += p.t; porM[m].a += p.a || 0; });
-  const ms = Object.entries(porM).sort((a, b) => a[1].a / a[1].t - b[1].a / b[1].t);
-  return `
-  <header class="stack" style="gap:6px"><span class="eyebrow">${esc(dia)}</span><h1>Rumo ao Fisco</h1></header>
+const META = 80, MIN_Q = 5;
+function placar(filtro) {
+  let t = 0, a = 0, erros = 0;
+  QS.forEach(q => { if (!filtro(q)) return; const p = prog(q); if (!p.t || p.anulada) return; t += p.t; a += p.a || 0; if (p.e) erros++; });
+  return { t, a, erros, pct: t ? Math.round(100 * a / t) : null };
+}
+function barra(pct) {
+  const cor = pct === null ? "var(--line)" : pct >= META ? "var(--ok)" : pct >= 60 ? "var(--warn)" : "var(--bad)";
+  return `<div class="meta-bar" role="img" aria-label="${pct === null ? "sem dados" : pct + "% de acertos"}"><i style="width:${pct || 0}%;background:${cor}"></i><span class="meta-linha" style="left:${META}%"></span></div>`;
+}
+function vDesempenho() {
+  const geral = placar(() => true);
+  const ordemM = materias().map(m => ({ m, p: placar(q => q.materia === m) })).sort((x, y) => (x.p.pct === null) - (y.p.pct === null) || (x.p.pct ?? 0) - (y.p.pct ?? 0) || ordem(x.m, y.m)).map(x => x.m);
+  const linhas = ordemM.map(m => {
+    const pm = placar(q => q.materia === m);
+    const temas = temasDe(m).map(t => ({ t, p: placar(q => q.temaId === t.id) })).filter(x => x.p.t);
+    const status = pm.pct === null ? `<span class="chip">sem questões resolvidas</span>` : pm.t < MIN_Q ? `<span class="chip">poucas questões</span>` : pm.pct >= META ? `<span class="chip ok">meta atingida</span>` : `<span class="chip bad">abaixo da meta</span>`;
+    const alerta = pm.pct !== null && pm.t >= MIN_Q && pm.pct < META;
+    return `<section class="panel dm ${alerta ? "dm-alerta" : ""}">
+      <div class="row between"><h3>${esc(m)}</h3>${status}</div>
+      <div class="row between"><span class="dm-pct">${pm.pct === null ? "—" : pm.pct + "%"}</span><span class="num">${pm.a}/${pm.t} acertos</span></div>
+      ${barra(pm.pct)}
+      ${alerta ? `<p class="small"><strong>Abaixo dos 80%.</strong> Treine com questões parecidas com as que você errou nesta matéria.</p><button class="primary" data-act="reforco" data-m="${esc(m)}">Treinar ${esc(m)}</button>` : ""}
+      ${temas.length ? `<details class="dm-temas"><summary class="small">Ver por conteúdo (${temas.length})</summary>${temas.map(({ t, p }) => `<div class="dm-tema"><div class="row between"><span class="small">${esc(t.titulo)}</span><span class="num">${p.pct}% · ${p.a}/${p.t}</span></div>${barra(p.pct)}${p.t >= MIN_Q && p.pct < META ? `<button class="ghost small" data-act="reforco" data-t="${esc(t.id)}" style="align-self:flex-start;padding-left:0">Treinar este conteúdo →</button>` : ""}</div>`).join("")}</details>` : ""}
+    </section>`;
+  }).join("");
+  return `<header class="stack" style="gap:6px"><span class="eyebrow">Meta: ${META}% de acertos</span><h1>Desempenho</h1></header>
   <section class="panel">
-    <h2>Para hoje</h2>
-    <div class="today">
-      <div><b>${st.venc + Math.min(st.novosC, 20)}</b><span class="small muted">cards a revisar</span></div>
-      <div><b>${st.novasQ}</b><span class="small muted">questões novas</span></div>
-      <div><b>${st.erradas}</b><span class="small muted">para refazer</span></div>
-    </div>
-    <button class="primary wide" data-act="rapida">Revisão rápida · 10 itens</button>
-    ${st.erradas ? `<button class="wide" data-act="parecidas-home">Questões parecidas com as que errei</button>` : ""}
+    <div class="row between"><h2>Geral</h2><span class="num">${geral.a}/${geral.t} acertos</span></div>
+    <span class="dm-pct dm-geral">${geral.pct === null ? "—" : geral.pct + "%"}</span>
+    ${barra(geral.pct)}
+    <p class="small muted">${geral.t ? "A linha vertical marca a meta de 80%. O aviso só aparece com pelo menos " + MIN_Q + " questões resolvidas na matéria, para não pesar um começo com poucas questões." : "Resolva questões na aba Estudar para acompanhar seu desempenho aqui."} Fica salvo neste aparelho.</p>
   </section>
-  <section class="panel">
-    <h2>Desempenho por matéria</h2>
-    ${ms.length ? `<div class="perf">${ms.map(([m, v]) => { const p = Math.round(100 * v.a / v.t); return `<span>${esc(m)}</span><span class="num">${p}% · ${v.a}/${v.t}</span><div class="bar"><i style="width:${p}%;background:${p < 60 ? "var(--bad)" : p < 75 ? "var(--warn)" : "var(--ok)"}"></i></div>`; }).join("")}</div><p class="small muted">Do pior para o melhor aproveitamento. Fica salvo só neste aparelho.</p>` : `<p class="muted small">Resolva algumas questões para ver seu aproveitamento aqui.</p>`}
-  </section>
-  <p class="small muted">Conteúdo de ${esc(new Date(C.geradoEm).toLocaleDateString("pt-BR"))} · ${TEMAS.length} temas · ${QS.length} questões · ${CARDS.length} flashcards</p>`;
+  ${linhas}`;
 }
 function itemTema(t) {
   const nq = QS.filter(q => q.temaId === t.id && !q.reserva).length, nc = CARDS.filter(c => c.temaId === t.id).length;
@@ -322,7 +347,7 @@ function vSessao() {
     <section class="panel"><div class="today"><div><b>${s.acertos}/${s.feitas}</b><span class="small muted">questões certas</span></div><div><b>${s.cardsFeitos}</b><span class="small muted">cards revisados</span></div><div><b>${tot}</b><span class="small muted">itens</span></div></div>
     ${(() => { const o = s.origem; const nres = o.temaId ? QS.filter(q => q.temaId === o.temaId && q.reserva && !prog(q).t).length : 0; return o.modo === "questoes" && nres ? `<button class="wide" data-act="extras-de" data-id="${esc(o.temaId)}">Fazer as questões extras (${nres})</button>` : ""; })()}
     ${s.feitas > s.acertos ? `<button class="wide" data-act="parecidas-sessao">Parecidas com as que errei nesta sessão</button>` : ""}
-    <div class="row"><button class="primary" data-act="denovo">Repetir</button><button data-act="sair">Voltar ao Estudar</button></div></section>`;
+    <div class="row"><button class="primary" data-act="denovo">Repetir</button><button data-act="sair">${s.origem.modo === "reforco" ? "Voltar" : "Voltar ao Estudar"}</button></div></section>`;
   }
   const cur = itemAtual(); if (!cur || !cur.x) { s.i++; return vSessao(); }
   const t = tema(cur.x.temaId) || {};
@@ -394,6 +419,7 @@ document.addEventListener("click", e => {
   else if (a === "tema") { S.view = "tema"; S.temaId = b.dataset.id; S.tab = "questoes"; render(); scrollTo(0, 0); }
   else if (a === "tab") { S.tab = b.dataset.v; render(); }
   else if (a === "rapida") iniciar({ materia: "", modo: "misto", n: 10 });
+  else if (a === "reforco") iniciar({ modo: "reforco", n: 15, materia: b.dataset.m || "", temaId: b.dataset.t || "" });
   else if (a === "modo") { S.opts.modo = b.dataset.v; render(); }
   else if (a === "iniciar") {
     const o = S.opts;
@@ -414,7 +440,7 @@ document.addEventListener("click", e => {
   else if (a === "parecidas-tema") iniciar({ modo: "parecidas", n: 10, temaId: S.temaId });
   else if (a === "parecidas-de") iniciar({ modo: "parecidas", n: 10, base: b.dataset.id });
   else if (a === "denovo") iniciar(s.origem);
-  else if (a === "sair") { S.session = null; S.view = "estudar"; render(); scrollTo(0, 0); }
+  else if (a === "sair") { const volta = s && s.origem && s.origem.modo === "reforco" ? "desempenho" : "estudar"; S.session = null; S.view = volta; render(); scrollTo(0, 0); }
   else if (a === "revelar") { s.rev = true; render(); }
   else if (a === "nota") {
     const c = cardP(itemAtual().x), q = +b.dataset.q;
