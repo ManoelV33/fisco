@@ -190,3 +190,11 @@ mark.mk{background:linear-gradient(transparent 12%,var(--marker) 12%,var(--marke
 .dm-alerta{border-color:#f0c2bd;border-left:4px solid var(--bad)}
 .dm-temas summary{color:var(--accent);font-weight:700}
 .dm-tema{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+
+/* níveis */
+.chip.nv1{color:#3d6b52;background:#eef6f1;border-color:transparent}
+.chip.nv2{color:#8a5a00;background:#fdf3e1;border-color:transparent}
+.chip.nv3{color:#fff;background:var(--ink);border-color:var(--ink)}
+.dm-niveis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dm-niveis div{display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:10px;border-radius:8px;background:var(--wash)}
+.dm-niveis b{font-family:var(--f-display);font-stretch:85%;font-size:1.4rem;font-weight:800}

@@ -30,7 +30,7 @@ def main():
     for f in sorted(glob.glob(os.path.join(a.pacotes, "pacote-*.json"))):
         p = json.load(open(f))
         for q in p["questoes"]:
-            d = {k: q[k] for k in ("id", "tipo", "enunciado", "alternativas", "gabarito", "comentario", "fonteProva", "banca", "reserva", "sim", "prioridade") if k in q and q[k] not in (None, "", [])}
+            d = {k: q[k] for k in ("id", "tipo", "enunciado", "alternativas", "gabarito", "comentario", "fonteProva", "banca", "reserva", "sim", "prioridade", "nivel") if k in q and q[k] not in (None, "", [])}
             d["temaId"] = p["temaId"]
             questoes.append(d)
     cards = []

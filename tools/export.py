@@ -61,6 +61,11 @@ PULAR = {"1o - CONT. GERAL E AVANÇADA (DFC)"}  # cópia do 10 (DFC)
 
 FISCAL = re.compile(r"Auditor|AFRFB|AFRE|AFTE|Receita|RFB|SEFAZ|SEF[-/ ]|SEFIN|SEFA\b|SEMEF|SMF|Fiscal|Tribut|\bISS\b|Fazenda|Fazendári", re.I)
 
+# concursos de nível parecido com o fiscal (boas questões para treinar)
+SIMILAR = re.compile(r"\bPF\b|Pol[ií]cia Federal|\bPRF\b|\bMPU\b|\bMP[A-Z]{0,2}\b|Minist[ée]rio P[úu]blico|\bTRT|\bTRF|\bTRE|\bTSE\b|\bSTJ\b|\bSTF\b|\bTST\b|\bTCU\b|\bTCE|\bTCM|\bTC-?DF\b|\bCGU\b|\bCGE|\bCGM|\bAGU\b|\bPGE|\bPGM|\bPGFN\b|\bBACEN\b|Banco Central|\bCVM\b|\bSUSEP\b|\bANAC\b|\bANTT\b|\bANP\b|\bANEEL\b|\bANS\b|\bANVISA\b|Senado|C[âa]mara dos Deputados|\bDPU\b|\bDPE|Delegado|Procurador|Perito|Controle Externo|Controle Interno|Analista", re.I)
+# cargos de nível médio (peso menor)
+MEDIO = re.compile(r"T[ée]cnico|Assistente|Auxiliar|Escritur[áa]rio|Agente Administrativo|N[íi]vel M[ée]dio|Soldado|Oficial de Promotoria", re.I)
+
 def slug(s):
     s = unicodedata.normalize("NFD", s)
     s = "".join(c for c in s if unicodedata.category(c) != "Mn")
@@ -93,11 +98,44 @@ def depende_dados(q, materia):
         return True
     return False
 
+PESO = {"Direito Tributário": 3, "Contabilidade Geral e Avançada": 3}
+
+def quantas(materia, teoria_kb, pool):
+    """Quantas questões principais e extras o conteúdo recebe.
+    Tamanho do assunto (teoria) + quanto ele é cobrado (questões no PDF) + peso da matéria para auditor fiscal."""
+    sc = teoria_kb / 10 + pool / 12
+    base = 10 if sc < 8 else 12 if sc < 15 else 15 if sc < 25 else 18 if sc < 35 else 20
+    base += PESO.get(materia, 0)
+    ativ = max(min(10, pool), min(base, int(pool * 0.6)))
+    return ativ, min(30, pool - ativ)
+
+def nivel(q):
+    """Nível estimado (1 básico, 2 intermediário, 3 avançado): cargo/órgão da prova, banca e complexidade da questão.
+    É uma estimativa: os PDFs não trazem o percentual real de acerto dos candidatos."""
+    f = q.get("fonteProva", ""); d = 0.0
+    if re.search(r"Auditor|AFRFB|AFRE|AFTE|AFTM|Fiscal de Rendas|Fiscal de Tributos|Agente Fiscal|Analista Tribut", f, re.I): d += 2
+    elif re.search(r"SEFAZ|SEFIN|SEF[-/ ]|Receita|RFB|\bISS\b|\bSMF\b|Fazenda|SEFA\b|SEMEF", f, re.I): d += 1.5
+    elif re.search(r"Analista|Fiscal|Procurador|Delegado|Perito|Controle Externo|Controle Interno|Especialista|Consultor|Juiz|Promotor|Defensor", f, re.I): d += 1
+    elif SIMILAR.search(f): d += 0.75
+    if re.search(r"T[ée]cnico|Assistente|Auxiliar|Escritur|Soldado|Agente Administrativo", f, re.I) and not re.search(r"Auditor|Analista|Fiscal", f, re.I): d -= 1
+    b = q.get("banca", "")
+    if b == "FGV": d += 0.5
+    elif b not in ("CEBRASPE", "FCC", "ESAF", ""): d -= 0.5
+    n = len(q["enunciado"] + " " + " ".join(q.get("alternativas") or []))
+    d += 0.5 * ((n > 700) + (n > 1100) + (n > 1700))
+    if "```" in q["enunciado"]: d += 1
+    if re.search(r"(^|\n)\s*(I|II|III|IV)\s*[\-–.)]", q["enunciado"]): d += 0.5
+    return 1 if d <= 0.5 else 2 if d <= 2.0 else 3
+
 def score(q):
     s = 0.0
     f = q["fonteProva"]
     if FISCAL.search(f):
         s += 3
+    elif SIMILAR.search(f):
+        s += 1.5
+    if MEDIO.search(f) and not re.search(r"Auditor|Analista|Fiscal", f, re.I):
+        s -= 1
     ys = [int(y) for y in re.findall(r"(?<!\d)(19[89]\d|20[0-2]\d)(?!\d)", f)]
     y = max(ys) if ys else 0
     if y >= 2021: s += 2
@@ -139,15 +177,18 @@ def build(subdir, fname):
         if not q.get("comentada", True): s -= 0.5
         sc.append(s)
     sc = np.array(sc)
+    teoria_kb = len(parse.theory_text(r["theory"]).encode()) / 1000
+    n_ativ, n_res = quantas(materia, teoria_kb, n)
+    limite_tipo = max(1, int(round(n_ativ * 2 / 3)))
     # MMR selection for the 12 active
     sel = []
     tipos = {"ce": 0, "me": 0}
     cand = list(range(n))
-    while len(sel) < min(ATIVAS, n):
+    while len(sel) < min(n_ativ, n):
         best, bv = None, -1e9
         for i in cand:
             if i in sel: continue
-            if tipos[qs[i]["tipo"]] >= 8 and sum(1 for j in cand if j not in sel and qs[j]["tipo"] != qs[i]["tipo"]) > 0:
+            if tipos[qs[i]["tipo"]] >= limite_tipo and sum(1 for j in cand if j not in sel and qs[j]["tipo"] != qs[i]["tipo"]) > 0:
                 continue
             red = max((S[i][j] for j in sel), default=0)
             v = sc[i] - 3.0 * red
@@ -155,9 +196,10 @@ def build(subdir, fname):
         if best is None: break
         sel.append(best); tipos[qs[best]["tipo"]] += 1
     rest = sorted([i for i in range(n) if i not in sel], key=lambda i: -sc[i])
-    reserva = rest[:RESERVA]
+    reserva = rest[:n_res]
     keep = sel + reserva
-    ids = {i: f"{tid}-q{k:03d}" for k, i in enumerate(keep)}
+    import hashlib
+    ids = {i: f"{tid}-" + hashlib.sha1(chave(qs[i]["enunciado"] + "|".join(qs[i]["alternativas"] or [])).encode()).hexdigest()[:10] for i in keep}
     out = []
     for i in keep:
         q = qs[i]
@@ -165,7 +207,7 @@ def build(subdir, fname):
         d = {"id": ids[i], "tipo": q["tipo"], "enunciado": q["enunciado"], "gabarito": q["gabarito"],
              "comentario": q["comentario"], "fonteProva": q["fonteProva"], "banca": q["banca"],
              "assunto": q["assunto"], "origem": "material", "prioridade": round(float(sc[i]), 2),
-             "sim": [ids[j] for j in sims]}
+             "sim": [ids[j] for j in sims], "nivel": nivel(q)}
         if q["tipo"] == "me": d["alternativas"] = q["alternativas"]
         if i in reserva: d["reserva"] = True
         out.append(d)
